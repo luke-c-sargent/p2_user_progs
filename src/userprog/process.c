@@ -18,8 +18,16 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
+/* 
+Modified: 3/6, 
+*/ 
+
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+/* added */
+
+/* ----------------------------------------------------- */
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -31,17 +39,59 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
+  // added ---------------------------------------
+  // parse command line
+  //copy string
+  char * arg_copy = palloc_get_page (0);
+  if (arg_copy == NULL){
+    printf("ERROR: ARG COPY FAIL\n");
+    return TID_ERROR;
+  }
+
+  strlcpy (arg_copy, file_name, PGSIZE); 
+  char *token, *save_ptr;
+  hex_dump(arg_copy, arg_copy, 80, 1);
+  int indexer = 0;
+  for (token = strtok_r (arg_copy, " ", &save_ptr); token != NULL;
+    token = strtok_r (NULL, " ", &save_ptr))
+  {
+  	strlcpy(arg_copy + indexer, token, strlen(token)+1);
+  	indexer += strlen(token)+1;
+    printf ("[%d]'%s'\n", strlen(token), token);
+    printf("%s\n", save_ptr);
+    // get size of token
+    //strlen(token);
+  }
+  while(indexer!=PGSIZE){
+    arg_copy[indexer] = 0;
+    ++indexer;
+  } 
+  // 
+  hex_dump(arg_copy, arg_copy, 80, 1);
+  //palloc_free_page(arg_copy);
+ // --------------------------------------------
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
-  strlcpy (fn_copy, file_name, PGSIZE);
-
+  //strlcpy (fn_copy, arg_copy, PGSIZE);
+  indexer = 0;
+  while ( indexer < PGSIZE){
+  	fn_copy[indexer] = arg_copy[indexer];
+  	++indexer;
+  }
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  printf("fn_copy hexdump:\n");
+  hex_dump( fn_copy, fn_copy, 80, 1);
+  tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
+  // added
+  palloc_free_page(arg_copy);
+  //-=------------------- 
   return tid;
 }
 
@@ -50,6 +100,8 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+  printf("start process:\n");
+  hex_dump(file_name_, file_name_, 80, 1);
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
@@ -88,6 +140,11 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  // added --------------------------------------------------
+  while (1){
+    // change me
+  }
+  // --------------------------------------------------------
   return -1;
 }
 
@@ -195,7 +252,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, char *setup_stack);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -302,7 +359,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  //if (!setup_stack (esp))
+  if (!setup_stack (esp, file_name))
     goto done;
 
   /* Start address. */
@@ -427,7 +485,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+//setup_stack (void **esp) 
+setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
 {
   uint8_t *kpage;
   bool success = false;
@@ -441,6 +500,61 @@ setup_stack (void **esp)
       else
         palloc_free_page (kpage);
     }
+  // added -----------------------------------------------------------------
+  // populate stack with arguments in reverse order
+  char * my_esp = (char*) *esp;
+  int idx=0;//number of chars, including null terminators, in args
+  while(idx < PGSIZE){ // on the off chance every byte is used as an arg
+  	if(idx){//not first
+  		if( !arg_array[idx] && !arg_array[idx-1] ) // if two consecutive zeros
+  			break;
+  	}
+  	++idx;
+  }
+  int max_idx = idx;
+  for(idx; idx >0; --idx){// populate the stack from passed in char*
+  	*(my_esp - idx) = arg_array[max_idx - idx];
+  }
+  my_esp -= max_idx;
+  // word alignment by 4
+  int remain = 4 - (max_idx % 4);
+  int copy_remain = remain;
+  for( remain; remain; --remain)
+  	*(my_esp - remain) = 0;
+  my_esp -= copy_remain;
+  
+  // skip over 4 0x00 bytes for null entry to array
+  my_esp -= 8;
+  hex_dump(my_esp, my_esp, 80,1);
+	printf("\n!!\n");
+  char ** my_cpp = my_esp;
+  my_esp = PHYS_BASE;
+  printf("my_cpp: %p\n",my_cpp);
+  printf("my_esp: %p\n",my_esp);
+  //add addresses
+  int argc=0;
+  for(idx=2; idx <= max_idx+1; ++idx){
+  	if( *(my_esp-idx) == NULL ){
+  		*my_cpp = (my_esp-idx+1);
+  		printf("added %p\n",(my_esp-idx+1));
+  		--my_cpp;
+  		++argc;
+  	}
+  }
+  *my_cpp = my_cpp+1;
+  --my_cpp;
+  hex_dump(my_esp-80, my_esp-80, 80,1);
+	printf("\n!!\n");
+  printf("sentinel 1\n");
+  *((int*)my_cpp) = argc;
+  //*((int*)(*my_cpp)) = max_idx;
+
+  *esp = (void *) (my_cpp-1);
+  printf("esp:%p\n",esp);
+  // hex dump
+  printf(" LOOK I'M A STACK \n");
+  hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
+  // -------------------------------------------------------------------
   return success;
 }
 
