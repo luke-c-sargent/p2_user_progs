@@ -55,12 +55,10 @@ process_execute (const char *file_name)
   for (token = strtok_r (arg_copy, " ", &save_ptr); token != NULL;
     token = strtok_r (NULL, " ", &save_ptr))
   {
-  	strlcpy(arg_copy + indexer, token, strlen(token)+1);
-  	indexer += strlen(token)+1;
-    printf ("[%d]'%s'\n", strlen(token), token);
-    printf("%s\n", save_ptr);
-    // get size of token
-    //strlen(token);
+    int length = strlen(token);
+    printf ("[%d]'%s'\n", length, token);
+  	strlcpy(arg_copy + indexer, token, length+1);
+  	indexer += length + 1;
   }
   while(indexer!=PGSIZE){
     arg_copy[indexer] = 0;
@@ -68,7 +66,7 @@ process_execute (const char *file_name)
   } 
   // 
   hex_dump(arg_copy, arg_copy, 80, 1);
-  //palloc_free_page(arg_copy);
+  hex_dump(arg_copy, arg_copy, 80, 1);
  // --------------------------------------------
 
   /* Make a copy of FILE_NAME.
@@ -509,7 +507,7 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   		if( !arg_array[idx] && !arg_array[idx-1] ) // if two consecutive zeros
   			break;
   	}
-  	++idx;
+  	++idx; // otherwise character was in sequence
   }
   int max_idx = idx;
   for(idx; idx >0; --idx){// populate the stack from passed in char*
@@ -523,36 +521,34 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   	*(my_esp - remain) = 0;
   my_esp -= copy_remain;
   
-  // skip over 4 0x00 bytes for null entry to array
+  // skip over 4 0x00 bytes for null entry to array,
+  // then another 4 bytes to place pointer for next entry
   my_esp -= 8;
-  hex_dump(my_esp, my_esp, 80,1);
-	printf("\n!!\n");
+  //hex_dump(my_esp, my_esp, 80,1);
   char ** my_cpp = my_esp;
   my_esp = PHYS_BASE;
-  printf("my_cpp: %p\n",my_cpp);
-  printf("my_esp: %p\n",my_esp);
+  //printf("my_cpp: %p\n",my_cpp);
+  //printf("my_esp: %p\n",my_esp);
+  
   //add addresses
   int argc=0;
   for(idx=2; idx <= max_idx+1; ++idx){
   	if( *(my_esp-idx) == NULL ){
   		*my_cpp = (my_esp-idx+1);
-  		printf("added %p\n",(my_esp-idx+1));
+  		//printf("added %p\n",(my_esp-idx+1));
   		--my_cpp;
   		++argc;
   	}
   }
-  *my_cpp = my_cpp+1;
+  *my_cpp = my_cpp+1; // place last address, address of argv[0], on stack
   --my_cpp;
-  hex_dump(my_esp-80, my_esp-80, 80,1);
-	printf("\n!!\n");
-  printf("sentinel 1\n");
-  *((int*)my_cpp) = argc;
-  //*((int*)(*my_cpp)) = max_idx;
+
+  *((int*)my_cpp) = argc; // place argc on stack
 
   *esp = (void *) (my_cpp-1);
-  printf("esp:%p\n",esp);
+  //printf("esp:%p\n",esp);
   // hex dump
-  printf(" LOOK I'M A STACK \n");
+  printf("STACK HEX DUMP: \n");
   hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
   // -------------------------------------------------------------------
   return success;
