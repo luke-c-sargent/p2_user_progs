@@ -21,12 +21,12 @@ syscall_handler (struct intr_frame *f UNUSED)
   	// intr_frame f has element esp f->esp; arguments for system call
   	// live there*/
   printf("other hex dump\n");
-  hex_dump((f->esp), (f->esp), 80, 1);
+  hex_dump((f->esp)-20, (f->esp)-20, 140, 1);
 
   int syscall_id = *(int*)(f->esp);
   printf ("system call rec'd: ");
   switch(syscall_id){
-  	case SYS_HALT: 
+  	case SYS_HALT:
   		printf("SYS_HALT signal");
   		break;
   	case SYS_EXIT: 
@@ -55,8 +55,12 @@ syscall_handler (struct intr_frame *f UNUSED)
   		break;
   	case SYS_WRITE: 
   		printf("SYS_WRITE signal");
-		printf("%s",(char*)(f->esp+4)); // fix me
-		//write (int fd, const void *buffer, unsigned size);
+  		int fd = *(int*)(f->esp+4);
+
+		printf("fd: %d \n",fd); // fix me
+		// 1 = std out
+		//const char * buff = ;
+		//write (1, const void *buffer, unsigned size);
   		break;
   	case SYS_SEEK: 
   		printf("SYS_SEEK signal");
