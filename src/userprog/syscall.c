@@ -56,8 +56,10 @@ syscall_handler (struct intr_frame *f UNUSED)
   	case SYS_WRITE: 
   		printf("SYS_WRITE signal");
   		int fd = *(int*)(f->esp+4);
-
-		printf("fd: %d \n",fd); // fix me
+  		char ** cp = (char*)(f->esp+8);
+  		int char_count = *(int*)(f->esp+12);
+		//printf("fd: %d %s : %d \n", fd, *cp, char_count); // fix me
+		putbuf(*cp, char_count);
 		// 1 = std out
 		//const char * buff = ;
 		//write (1, const void *buffer, unsigned size);
