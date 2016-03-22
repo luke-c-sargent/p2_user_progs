@@ -136,11 +136,15 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   // added --------------------------------------------------
+  //int i = 0;
   while (1){
+    //++i;
     // change me
   }
+  printf("i dont get here, surely!\n");
   // --------------------------------------------------------
-  return -1;
+  return 1;
+  //return -1;
 }
 
 /* Free the current process's resources. */
