@@ -102,6 +102,7 @@ remove (const char *file)
 int
 open (const char *file)
 {
+  printf("hello i open");
   return syscall1 (SYS_OPEN, file);
 }
 
@@ -120,6 +121,7 @@ read (int fd, void *buffer, unsigned size)
 int
 write (int fd, const void *buffer, unsigned size)
 {
+  printf("hello i write");
   return syscall3 (SYS_WRITE, fd, buffer, size);
 }
 

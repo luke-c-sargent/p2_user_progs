@@ -50,7 +50,6 @@ process_execute (const char *file_name)
 
   strlcpy (arg_copy, file_name, PGSIZE); 
   char *token, *save_ptr;
-  hex_dump(arg_copy, arg_copy, 80, 1);
   int indexer = 0;
   for (token = strtok_r (arg_copy, " ", &save_ptr); token != NULL;
     token = strtok_r (NULL, " ", &save_ptr))
@@ -64,9 +63,7 @@ process_execute (const char *file_name)
     arg_copy[indexer] = 0;
     ++indexer;
   } 
-  // 
-  hex_dump(arg_copy, arg_copy, 80, 1);
-  hex_dump(arg_copy, arg_copy, 80, 1);
+
  // --------------------------------------------
 
   /* Make a copy of FILE_NAME.
@@ -82,8 +79,8 @@ process_execute (const char *file_name)
   }
   /* Create a new thread to execute FILE_NAME. */
   //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  printf("fn_copy hexdump:\n");
-  hex_dump( fn_copy, fn_copy, 80, 1);
+  //printf("fn_copy hexdump:\n");
+  //hex_dump( fn_copy, fn_copy, 80, 1);
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -98,8 +95,8 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  printf("start process:\n");
-  hex_dump(file_name_, file_name_, 80, 1);
+  //printf("start process:\n");
+  //hex_dump(file_name_, file_name_, 80, 1);
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
