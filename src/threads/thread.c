@@ -20,6 +20,10 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+// --------------------------------------------------------
+#define UNUSED_CHILD_EXIT_STATUS -666
+// --------------------------------------------------------
+#define UNI
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -70,6 +74,19 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
+
+// --------------------------------------------------------
+static void print_child_list(struct list* child_list){
+  struct list_elem *e;
+
+  for (e = list_begin (child_list); e != list_end (child_list);
+       e = list_next (e))
+    {
+      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+      printf("[TID: %d: %s][ptr:%p][ES:%d]\n",tcp->tid, tcp->child_pointer->name, tcp->child_pointer, tcp->exit_status);
+    }
+  }
+// --------------------------------------------------------
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -183,7 +200,32 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  //--------------------------------------------
+    // set child thread's parent
+    t->parent = thread_current();
 
+    // add thread to list
+    printf("adding thread %d to thread %d\n", tid, thread_current()->tid);
+    // create thread_child struct of zero'd memory from kernel space
+    struct thread_child* child_struct_ptr = palloc_get_page(PAL_ZERO);
+    if( child_struct_ptr == NULL ) {
+      // if page wasnt allocated properly
+      return TID_ERROR;
+    } //otherwise, populate child struct
+    child_struct_ptr->tid = tid;
+    child_struct_ptr->child_pointer = t;
+    child_struct_ptr->exit_status = UNUSED_CHILD_EXIT_STATUS;
+
+    // add to list
+    list_push_back(&(thread_current()->lil_babies), &child_struct_ptr->elem);
+    
+    // give child thread its elem in the child struct list
+    t->child_list_elem = &child_struct_ptr->elem;
+
+    printf("added! printing contents:\n");
+    print_child_list(&thread_current()->lil_babies);
+    // ****** ADD REMOVAL OF PALLOC'D PAGE WHEN PARENT BOUNCES OUTSKIE
+  //--------------------------------------------------
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -465,6 +507,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  //-----------------------------------------------------------
+  list_init (&(t->lil_babies));
+  //-----------------------------------------------------------
 
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);

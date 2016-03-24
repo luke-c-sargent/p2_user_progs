@@ -79,11 +79,13 @@ process_execute (const char *file_name)
   }
   /* Create a new thread to execute FILE_NAME. */
   //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  //printf("fn_copy hexdump:\n");
-  //hex_dump( fn_copy, fn_copy, 80, 1);
+  printf("fn_copy hexdump:\n");
+  hex_dump( fn_copy, fn_copy, 80, 1);
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+  //else
+    //list_push_back()
   // added
   palloc_free_page(arg_copy);
   //-=------------------- 
@@ -95,11 +97,13 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  //printf("start process:\n");
+  printf("start process:\n");
   //hex_dump(file_name_, file_name_, 80, 1);
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
+
+  printf("filename: %s\n", file_name);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -110,6 +114,7 @@ start_process (void *file_name_)
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
+  printf("success? %d. esp: %p\n", success, if_.esp);
   if (!success) 
     thread_exit ();
 
@@ -120,6 +125,7 @@ start_process (void *file_name_)
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
+  ASSERT(false);
   NOT_REACHED ();
 }
 
@@ -270,6 +276,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
+  // --------------------------------------------------------
+  printf("t:%d load_filename: %s \n", t->tid, file_name);
+  //---------------------------------------------------------
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -281,7 +290,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("t:%d load: %s: open failed\n", t->tid, file_name);
       goto done; 
     }
 
@@ -364,7 +373,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
-
   success = true;
 
  done:
@@ -549,13 +557,13 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   *esp = (void *) (my_cpp-1);
   //printf("esp:%p\n",esp);
   // hex dump
-  printf("STACK HEX DUMP: \n");
+  printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
   hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
   // -------------------------------------------------------------------
   return success;
 }
 
-/* Adds a mapping from user virtual address UPAGE to kernel
+/* Adds a mapping from useF!r virtual address UPAGE to kernel
    virtual address KPAGE to the page table.
    If WRITABLE is true, the user process may modify the page;
    otherwise, it is read-only.

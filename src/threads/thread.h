@@ -100,9 +100,26 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
+    // -----------------------------------------------------------
+    struct list lil_babies;
+    struct thread* parent;
+    struct list_elem* child_list_elem;
+    //------------------------------------------------------------
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
+
+struct thread_child {
+  // tid -- for debugging
+  int tid;
+  // child pointer
+  struct thread * child_pointer;
+  // list element
+  struct list_elem elem;
+  // int?
+  int exit_status;
+};
+
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
