@@ -88,6 +88,43 @@ int write (int fd, const void *buffer, unsigned size){
 	return 1;
 }
 
+void halt (void){
+	shutdown_power_off();
+}
+
+void exit (int status){
+	//set current program's status to new status
+	//then call function to exit it, I think one might exist
+}
+
+pid_t exec (const char *cmd_line){
+	
+}
+
+int wait (pid_t pid){
+	//make sure process wait is implemented
+	//get child id? or just pid? And pass into process_wait
+	return process_wait(pid);
+}
+
+bool create (const char *file, unsigned initial_size){
+	//need to copy user file into kernel memory
+	//bool success = filesys_create(filecopy, initial_size, i think it's FILE_INODE which is a file sys object);
+	//free the filecopy
+	//return success;
+}
+
+bool remove (const char *file){
+	//need to copy user file into kernel memory
+	//bool success = filesys_remove(filecopy)
+	//free the filecopy
+	//return success;
+}
+
+int open (const char *file){
+	
+}
+
 /* 0 - 12
 	SYS_HALT,                   // Halt the operating system. 
     SYS_EXIT,                   // Terminate this process. 
