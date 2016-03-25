@@ -76,6 +76,8 @@ void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
 // --------------------------------------------------------
+// child helper functions----------------------------------
+
 static void print_child_list(struct list* child_list){
   struct list_elem *e;
 
@@ -86,6 +88,39 @@ static void print_child_list(struct list* child_list){
       printf("[TID: %d: %s][ptr:%p][ES:%d]\n",tcp->tid, tcp->child_pointer->name, tcp->child_pointer, tcp->exit_status);
     }
   }
+
+  // checks if the child exists in the child list
+  static bool has_child(tid_t child_tid){
+    struct list_elem *e;
+    struct list* child_list = &thread_current()->children;
+
+    for (e = list_begin (child_list); e != list_end (child_list);
+       e = list_next (e))
+    {
+      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+      if (tcp->tid == child_tid){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  struct thread* get_child_by_tid(tid_t child_tid){
+    struct list_elem *e;
+    struct list* child_list = &thread_current()->children;
+
+    for (e = list_begin (child_list); e != list_end (child_list);
+       e = list_next (e))
+    {
+      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+      if (tcp->tid == child_tid){
+        return tcp->child_pointer;
+      }
+    }
+    printf ("ERROR: tid %d not found in child list\n", child_tid);
+    return NULL;
+  }
+
 // --------------------------------------------------------
 
 /* Initializes the threading system by transforming the code
@@ -110,11 +145,13 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
 
+
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  sema_init(&initial_thread->sema, 0 );
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -201,6 +238,16 @@ thread_create (const char *name, int priority,
   tid = t->tid = allocate_tid ();
 
   //--------------------------------------------
+    // initialize thread's semaphore
+    enum intr_level old_level;
+
+    old_level = intr_disable ();
+    printf("sema init on %s\n", t->name);
+    sema_init(&t->sema, 0);
+    intr_set_level (old_level);
+    
+    printf("%s sema init complete\n",t->name);
+    //sema_down(&t->sema);
     // set child thread's parent
     t->parent = thread_current();
 
@@ -217,14 +264,14 @@ thread_create (const char *name, int priority,
     child_struct_ptr->exit_status = UNUSED_CHILD_EXIT_STATUS;
 
     // add to list
-    list_push_back(&(thread_current()->lil_babies), &child_struct_ptr->elem);
+    list_push_back(&(thread_current()->children), &child_struct_ptr->elem);
     
     // give child thread its elem in the child struct list
     t->child_list_elem = &child_struct_ptr->elem;
-
-    printf("added! printing contents:\n");
-    print_child_list(&thread_current()->lil_babies);
-    // ****** ADD REMOVAL OF PALLOC'D PAGE WHEN PARENT BOUNCES OUTSKIE
+    ASSERT(has_child(tid));
+    printf("added and verified! printing contents:\n");
+    print_child_list(&thread_current()->children);
+    // ****** ADD REMOVAL OF PALLOC'D PAGE WHEN CHILD IS REAPED
   //--------------------------------------------------
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -240,7 +287,9 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-
+  //-------------------------------------------------------------------
+  //sema_up(&t->sema);
+  //-------------------------------------------------------------------
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -502,15 +551,16 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (name != NULL);
 
   memset (t, 0, sizeof *t);
+  //-----------------------------------------------------------
+  list_init (&(t->children));
+  //-----------------------------------------------------------
+
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
-  //-----------------------------------------------------------
-  list_init (&(t->lil_babies));
-  //-----------------------------------------------------------
 
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);

@@ -5,6 +5,10 @@
 #include <list.h>
 #include <stdint.h>
 
+// added include----------------------------------------------
+#include "threads/synch.h"
+// -----------------------------------------------------------
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -101,7 +105,8 @@ struct thread
 #endif
 
     // -----------------------------------------------------------
-    struct list lil_babies;
+    struct semaphore sema; 
+    struct list children;
     struct thread* parent;
     struct list_elem* child_list_elem;
     //------------------------------------------------------------
@@ -119,7 +124,6 @@ struct thread_child {
   // int?
   int exit_status;
 };
-
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -156,5 +160,9 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+// --------------------------------------------------------------------
+struct thread* get_child_by_tid(tid_t child_tid);
+
 
 #endif /* threads/thread.h */

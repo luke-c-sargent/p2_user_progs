@@ -17,6 +17,10 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+// added includes -------------------------------------------------------
+#include "threads/synch.h"
+// ----------------------------------------------------------------------
+
 
 /* 
 Modified: 3/6, 
@@ -79,8 +83,8 @@ process_execute (const char *file_name)
   }
   /* Create a new thread to execute FILE_NAME. */
   //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  printf("fn_copy hexdump:\n");
-  hex_dump( fn_copy, fn_copy, 80, 1);
+  //printf("fn_copy hexdump:\n");
+  //hex_dump( fn_copy, fn_copy, 80, 1);
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -111,12 +115,14 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-
   /* If load failed, quit. */
   palloc_free_page (file_name);
   printf("success? %d. esp: %p\n", success, if_.esp);
   if (!success) 
     thread_exit ();
+  // otherwise, thread load succeeded and waiting thread
+
+
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -139,25 +145,34 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid)// UNUSED) 
 {
   // added --------------------------------------------------
-  //int i = 0;
-  while (1){
-    //++i;
-    // change me
+  //
+  // check: invalid TID, not child, process_wait already called
+  struct thread* child_tp = get_child_by_tid(child_tid);
+  if(child_tp == NULL){
+    printf("NULL child tid in process_wait; tid not found\n");
+    return -1;
   }
-  printf("i dont get here, surely!\n");
+  int exit_status = 1;
+  // notes:
+  //    sema down here, child sema ups upon death
+  //printf("%s is about to sema down\n",thread_current()->name);
+  sema_down(&thread_current()->sema);
+  return exit_status;
   // --------------------------------------------------------
-  return 1;
-  //return -1;
 }
 
 /* Free the current process's resources. */
 void
 process_exit (void)
 {
+  printf("process %s exiting\n", thread_current()->name);
   struct thread *cur = thread_current ();
+//----------------------------------------------
+  struct thread* parent = cur->parent;
+//----------------------------------------------
   uint32_t *pd;
 
   /* Destroy the current process's page directory and switch back
@@ -176,6 +191,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+    sema_up(&parent->sema);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -277,7 +293,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
   // --------------------------------------------------------
-  printf("t:%d load_filename: %s \n", t->tid, file_name);
+  //printf("t:%d load_filename: %s \n", t->tid, file_name);
   //---------------------------------------------------------
 
   /* Allocate and activate page directory. */
@@ -370,6 +386,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   //if (!setup_stack (esp))
   if (!setup_stack (esp, file_name))
     goto done;
+
+  //printf("valid stack for file %p\n",file);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -557,8 +575,8 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   *esp = (void *) (my_cpp-1);
   //printf("esp:%p\n",esp);
   // hex dump
-  printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
-  hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
+  //printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
+  //hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
   // -------------------------------------------------------------------
   return success;
 }

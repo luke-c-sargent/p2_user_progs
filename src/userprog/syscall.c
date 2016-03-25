@@ -27,67 +27,98 @@ syscall_handler (struct intr_frame *f )//UNUSED)
   //hex_dump((f->esp), (f->esp), 80, 1);
 
   // validate memory
-  printf("esp = %p\n", f->esp);
   if (!is_user_vaddr(f->esp)){
     printf("ptr not virtual address\n");
     //replace with system call
-    thread_exit();
+    exit(-1);
+  } else if(f->esp == NULL){
+    printf("nullptr error\n");
+    exit(-1);
+  }else if(pagedir_get_page(thread_current()->pagedir,f->esp) == NULL){
+    printf("ptr not to paged memory\n");
+    exit(-1);
+  }else{
+    printf("pointer is good\n");
   }
 
-
-
   int syscall_id = *(int*)(f->esp);
-  printf ("system call rec'd: ");
+  //printf ("system call rec'd: ");
   switch(syscall_id){
   	case SYS_HALT:
+    {
   		printf("SYS_HALT signal\n");
   		break;
+    }
   	case SYS_EXIT:
+    {
   		printf("SYS_EXIT signal\n");
       exit(666); // fix this
   		break;
-  	case SYS_EXEC: 
+    }
+  	case SYS_EXEC:
+    { 
   		printf("SYS_EXEC signal\n");
+      exec(f->esp + 4);
   		break;
-  	case SYS_WAIT: 
+    }
+  	case SYS_WAIT:
+    { 
   		printf("SYS_WAIT signal\n");
   		break;
-  	case SYS_CREATE: 
+    }
+  	case SYS_CREATE:
+    { 
   		printf("SYS_CREATE signal\n");
   		break;
-  	case SYS_REMOVE: 
+    }
+  	case SYS_REMOVE:
+    { 
   		printf("SYS_REMOVE signal\n");
   		break;
-  	case SYS_OPEN: 
-      ASSERT(false);
+    }
+  	case SYS_OPEN:
+    { 
   		printf("SYS_OPEN signal\n");
+      open(*(char**)(f->esp+4));
   		break;
-  	case SYS_FILESIZE: 
+    }
+  	case SYS_FILESIZE:
+    { 
   		printf("SYS_FILESIZE signal\n");
   		break;
-  	case SYS_READ: 
+    }
+  	case SYS_READ:
+    { 
   		printf("SYS_READ signal\n");
+      read(*(char**)(f->esp+4), NULL, NULL);
   		break;
-  	case SYS_WRITE:
-      printf("SYS_WRITE signal:\n");
+    }
+  	case SYS_WRITE: {
   		int fd = *(int*)(f->esp+4);
   		char ** cp = (char*)(f->esp+8);
   		int char_count = *(int*)(f->esp+12);
-		//printf("fd: %d %s : %d \n", fd, *cp, char_count); // fix me
-		write(fd, *cp, char_count);
-		return;
+		//printf("fd: %d %s : %d \n", fd, *cp, char_count);
+		  write(fd, *cp, char_count);
+		  return;
 		// 1 = std out
 		//const char * buff = ;
 		//write (1, const void *buffer, unsigned size);
-  	case SYS_SEEK: 
+    }
+  	case SYS_SEEK:
+    { 
   		printf("SYS_SEEK signal\n");
   		break;
-  	case SYS_TELL: 
+    }
+  	case SYS_TELL:
+    { 
   		printf("SYS_TELL signal\n");
   		break;
-  	case SYS_CLOSE: 
+    }
+  	case SYS_CLOSE:
+    { 
   		printf("SYS_CLOSE signal\n");
   		break;
+    }
   	default:
   		printf("ERROR: uncaught exception");
   }
@@ -115,16 +146,19 @@ void exit (int status){
   //set current program's status to new status
   struct thread_child * child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
   child_struct_ptr->exit_status = status;
-  printf("exiting with status %d\n", child_struct_ptr->exit_status);
-  //then call function to exit it, I think one might exist
-  thread_exit(); // this is maybe not right, eh buddeh?
+  printf("%s: exit(%d)\n", child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status); // fix this
+  //ASSERT(false);
+  // get rid of open files with file_close
+  return status;
 }
 
 pid_t exec (const char *cmd_line){
+  printf("exec'ing %s\n", cmd_line);
   return 0; // placeholder
 }
 
 int wait (pid_t pid){
+  printf("wait called\n");
   //make sure process wait is implemented
   //get child id? or just pid? And pass into process_wait
   return process_wait(pid);
@@ -132,6 +166,7 @@ int wait (pid_t pid){
 
 bool create (const char *file, unsigned initial_size){
   //need to copy user file into kernel memory
+  //palloc();
   //bool success = filesys_create(filecopy, initial_size, i think it's FILE_INODE which is a file sys object);
   //free the filecopy
   //return success;
@@ -139,14 +174,16 @@ bool create (const char *file, unsigned initial_size){
 }
 
 bool remove (const char *file){
-  //need to copy user file into kernel memory
+  //need to copy user file into kernel memory-- ??
   //bool success = filesys_remove(filecopy)
-  //free the filecopy
+  //free the filecopy --?
   //return success;
   return false; // placeholder
 }
 
 int open (const char *file){
+  printf("opening %s", file);
+  ASSERT(false);
   return 0; // placeholder
 }
 
@@ -154,6 +191,7 @@ int filesize (int fd){
   return 0; // placeholder
 }
 int read (int fd, void *buffer, unsigned length){
+  printf("attempting to read!\n");
   return 0; // placeholder
 }
 
