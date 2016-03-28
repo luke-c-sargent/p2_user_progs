@@ -7,6 +7,11 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 
+//---------------------------------------------------------
+#include "threads/synch.h"
+#define DEBUG 0
+//---------------------------------------------------------
+
 /* Partition that contains the file system. */
 struct block *fs_device;
 
@@ -23,6 +28,13 @@ filesys_init (bool format)
 
   inode_init ();
   free_map_init ();
+  //----------------------------------------------------
+  if(DEBUG)
+    printf("initializing filesystem semaphore... ");
+  sema_init(&filesys_sema,1);
+  if(DEBUG)
+    printf("  ... initialized! \n");
+  //----------------------------------------------------
 
   if (format) 
     do_format ();

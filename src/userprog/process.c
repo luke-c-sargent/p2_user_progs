@@ -17,21 +17,15 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-// added includes -------------------------------------------------------
-#include "threads/synch.h"
-// ----------------------------------------------------------------------
 
-
-/* 
-Modified: 3/6, 
-*/ 
+//------------------------------------------------
+#define DEBUG 0
+#define UNUSED_CHILD_EXIT_STATUS -666
+#define SYSCALL_ERROR -1
+//------------------------------------------------
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
-
-/* added */
-
-/* ----------------------------------------------------- */
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -44,8 +38,7 @@ process_execute (const char *file_name)
   tid_t tid;
 
   // added ---------------------------------------
-  // parse command line
-  //copy string
+  // parse command line, copy string
   char * arg_copy = palloc_get_page (0);
   if (arg_copy == NULL){
     printf("ERROR: ARG COPY FAIL\n");
@@ -59,40 +52,44 @@ process_execute (const char *file_name)
     token = strtok_r (NULL, " ", &save_ptr))
   {
     int length = strlen(token);
-    printf ("[%d]'%s'\n", length, token);
-  	strlcpy(arg_copy + indexer, token, length+1);
-  	indexer += length + 1;
+    if (DEBUG)
+      printf ("[%d]'%s'\n", length, token);
+    strlcpy (arg_copy + indexer, token, length+1);
+    indexer += length + 1;
   }
-  while(indexer!=PGSIZE){
+  while (indexer!=PGSIZE)
+  {
     arg_copy[indexer] = 0;
     ++indexer;
   } 
-
- // --------------------------------------------
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
-  //strlcpy (fn_copy, arg_copy, PGSIZE);
+
+  /* copy file, disregarding spaces by saving index position of
+     valid strings */
   indexer = 0;
-  while ( indexer < PGSIZE){
-  	fn_copy[indexer] = arg_copy[indexer];
-  	++indexer;
+  while ( indexer < PGSIZE)
+  {
+    fn_copy[indexer] = arg_copy[indexer];
+    ++indexer;
   }
   /* Create a new thread to execute FILE_NAME. */
-  //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  //printf("fn_copy hexdump:\n");
-  //hex_dump( fn_copy, fn_copy, 80, 1);
+  if (DEBUG)
+  {
+    printf ("fn_copy hexdump:\n");
+    hex_dump (fn_copy, fn_copy, 80, 1);
+  }
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
+  
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
-  //else
-    //list_push_back()
-  // added
+
   palloc_free_page(arg_copy);
-  //-=------------------- 
+  //-------------------------------------- end modified segment
   return tid;
 }
 
@@ -101,13 +98,11 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  printf("start process:\n");
-  //hex_dump(file_name_, file_name_, 80, 1);
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
-  printf("filename: %s\n", file_name);
+  if (DEBUG)
+    printf("filename: %s\n", file_name);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -117,12 +112,8 @@ start_process (void *file_name_)
   success = load (file_name, &if_.eip, &if_.esp);
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  printf("success? %d. esp: %p\n", success, if_.esp);
   if (!success) 
     thread_exit ();
-  // otherwise, thread load succeeded and waiting thread
-
-
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -131,7 +122,6 @@ start_process (void *file_name_)
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
-  ASSERT(false);
   NOT_REACHED ();
 }
 
@@ -145,22 +135,37 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid)// UNUSED) 
+process_wait (tid_t child_tid)
 {
   // added --------------------------------------------------
-  //
   // check: invalid TID, not child, process_wait already called
-  struct thread* child_tp = get_child_by_tid(child_tid);
-  if(child_tp == NULL){
-    printf("NULL child tid in process_wait; tid not found\n");
-    return -1;
+  struct thread* child_tp = get_child_by_tid (child_tid);
+  if (child_tp == NULL)
+  {
+    if (DEBUG)
+      printf("NULL child tid in process_wait; tid not found\n");
+
+    return SYSCALL_ERROR;
   }
+
   int exit_status = 1;
-  // notes:
-  //    sema down here, child sema ups upon death
-  //printf("%s is about to sema down\n",thread_current()->name);
-  sema_down(&thread_current()->sema);
-  return exit_status;
+  
+  // get the child struct pointer for use with synchronization
+  struct thread_child* child_struct_ptr  = list_entry (child_tp->child_list_elem, struct thread_child, elem);
+
+  if (DEBUG)
+  {
+    printf ("child exit status during process wait: %d\n", child_struct_ptr->exit_status);
+  }
+  
+  // if the status hasn't been set, child hasn't exited
+  if (child_struct_ptr->exit_status == UNUSED_CHILD_EXIT_STATUS)
+  {
+    child_struct_ptr->parent_waiting = 1;
+    sema_down (&thread_current()->sema);
+  }
+
+  return child_struct_ptr->exit_status;
   // --------------------------------------------------------
 }
 
@@ -168,11 +173,9 @@ process_wait (tid_t child_tid)// UNUSED)
 void
 process_exit (void)
 {
-  printf("process %s exiting\n", thread_current()->name);
+  if (DEBUG)
+    printf ("process_exit called\n");
   struct thread *cur = thread_current ();
-//----------------------------------------------
-  struct thread* parent = cur->parent;
-//----------------------------------------------
   uint32_t *pd;
 
   /* Destroy the current process's page directory and switch back
@@ -191,7 +194,6 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
-    sema_up(&parent->sema);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -273,7 +275,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp, char *setup_stack);
+static bool setup_stack (void **esp, char * arg_array);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -292,9 +294,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-  // --------------------------------------------------------
-  //printf("t:%d load_filename: %s \n", t->tid, file_name);
-  //---------------------------------------------------------
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -306,7 +305,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
-      printf ("t:%d load: %s: open failed\n", t->tid, file_name);
+      printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
 
@@ -383,14 +382,17 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  //if (!setup_stack (esp))
-  if (!setup_stack (esp, file_name))
+  if (!setup_stack (esp, file_name)){
+    if (DEBUG)
+    {
+      printf("!!SETUP_STACK FAILED\n");
+    }
     goto done;
-
-  //printf("valid stack for file %p\n",file);
+  }
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
+
   success = true;
 
  done:
@@ -510,8 +512,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-//setup_stack (void **esp) 
-setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
+setup_stack (void **esp, char * arg_array)
 {
   uint8_t *kpage;
   bool success = false;
@@ -529,43 +530,57 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   // populate stack with arguments in reverse order
   char * my_esp = (char*) *esp;
   int idx=0;//number of chars, including null terminators, in args
-  while(idx < PGSIZE){ // on the off chance every byte is used as an arg
-  	if(idx){//not first
-  		if( !arg_array[idx] && !arg_array[idx-1] ) // if two consecutive zeros
-  			break;
-  	}
-  	++idx; // otherwise character was in sequence
+  while(idx < PGSIZE) // if every byte is used as an arg
+  { 
+    //not first
+    if (idx)
+    {
+      if ( !arg_array[idx] && !arg_array[idx-1] ) // if two consecutive zeros
+        break;
+    }
+    ++idx; // otherwise character was in sequence
   }
+
   int max_idx = idx;
-  for(idx; idx >0; --idx){// populate the stack from passed in char*
-  	*(my_esp - idx) = arg_array[max_idx - idx];
+
+  // avoid corrupting thread page
+  // limit arguments to pagesize / 2
+  int actual_thread_size = (int)&(thread_current()->magic) + 4 - (int)thread_current();
+  if(PGSIZE - actual_thread_size < idx)
+    return false;
+  
+  // populate stack
+  for(idx; idx >0; --idx)
+  {
+    *(my_esp - idx) = arg_array[max_idx - idx];
   }
   my_esp -= max_idx;
+
   // word alignment by 4
   int remain = 4 - (max_idx % 4);
   int copy_remain = remain;
-  for( remain; remain; --remain)
-  	*(my_esp - remain) = 0;
+  for(remain; remain; --remain)
+    *(my_esp - remain) = 0;
+
   my_esp -= copy_remain;
   
-  // skip over 4 0x00 bytes for null entry to array,
-  // then another 4 bytes to place pointer for next entry
+  /* skip over 4 0x00 bytes for null entry to array,
+     then another 4 bytes to place pointer for next entry */
   my_esp -= 8;
-  //hex_dump(my_esp, my_esp, 80,1);
   char ** my_cpp = my_esp;
   my_esp = PHYS_BASE;
-  //printf("my_cpp: %p\n",my_cpp);
-  //printf("my_esp: %p\n",my_esp);
   
-  //add addresses
+  // add addresses to compose char* array argv
   int argc=0;
-  for(idx=2; idx <= max_idx+1; ++idx){
-  	if( *(my_esp-idx) == NULL ){
-  		*my_cpp = (my_esp-idx+1);
-  		//printf("added %p\n",(my_esp-idx+1));
-  		--my_cpp;
-  		++argc;
-  	}
+  for(idx=2; idx <= max_idx+1; ++idx)
+  {
+    // identify the boundaries
+    if ( *(my_esp-idx) == NULL )
+    {
+      *my_cpp = (my_esp-idx+1);
+      --my_cpp;
+      ++argc;
+    }
   }
   *my_cpp = my_cpp+1; // place last address, address of argv[0], on stack
   --my_cpp;
@@ -573,15 +588,18 @@ setup_stack (void **esp, char * arg_array) // argument pointer added to fn sig
   *((int*)my_cpp) = argc; // place argc on stack
 
   *esp = (void *) (my_cpp-1);
-  //printf("esp:%p\n",esp);
+
   // hex dump
-  //printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
-  //hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
-  // -------------------------------------------------------------------
+  if (DEBUG)
+  {
+    printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
+    hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
+  }
+
   return success;
 }
 
-/* Adds a mapping from useF!r virtual address UPAGE to kernel
+/* Adds a mapping from user virtual address UPAGE to kernel
    virtual address KPAGE to the page table.
    If WRITABLE is true, the user process may modify the page;
    otherwise, it is read-only.

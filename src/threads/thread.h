@@ -4,10 +4,9 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
-// added include----------------------------------------------
+//----------------------------------------
 #include "threads/synch.h"
-// -----------------------------------------------------------
+//----------------------------------------
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -107,23 +106,36 @@ struct thread
     // -----------------------------------------------------------
     struct semaphore sema; 
     struct list children;
+    struct list open_files;
     struct thread* parent;
     struct list_elem* child_list_elem;
     //------------------------------------------------------------
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
 
-struct thread_child {
-  // tid -- for debugging
-  int tid;
-  // child pointer
-  struct thread * child_pointer;
-  // list element
-  struct list_elem elem;
-  // int?
-  int exit_status;
-};
+struct thread_child 
+  {
+    // tid -- for debugging
+    int tid;
+    // child pointer
+    struct thread * child_pointer;
+    // list element
+    struct list_elem elem;
+
+    int parent_waiting;
+    // int?
+    int exit_status;
+  };
+
+struct thread_file 
+  {
+    int fd;
+    struct file * file_ptr;
+
+    struct list_elem elem;
+  };
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -163,6 +175,5 @@ int thread_get_load_avg (void);
 
 // --------------------------------------------------------------------
 struct thread* get_child_by_tid(tid_t child_tid);
-
 
 #endif /* threads/thread.h */

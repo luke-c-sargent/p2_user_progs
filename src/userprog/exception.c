@@ -89,7 +89,8 @@ kill (struct intr_frame *f)
       printf ("%s: dying due to interrupt %#04x (%s).\n",
               thread_name (), f->vec_no, intr_name (f->vec_no));
       intr_dump_frame (f);
-      thread_exit (); 
+      exit(-1);
+      //thread_exit (); 
 
     case SEL_KCSEG:
       /* Kernel's code segment, which indicates a kernel bug.
@@ -157,8 +158,8 @@ page_fault (struct intr_frame *f)
           write ? "writing" : "reading",
           user ? "user" : "kernel");
 
-  //printf("There is no crying in Pintos!\n");
-  printf("There is so much crying in Pintos! (;-;)\n");
+  printf("There is like totally a lot of crying in Pintos!\n");
+  printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
   kill (f);
 }
 

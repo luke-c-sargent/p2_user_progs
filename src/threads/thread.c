@@ -20,13 +20,14 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
-// --------------------------------------------------------
-#define UNUSED_CHILD_EXIT_STATUS -666
-// --------------------------------------------------------
-#define UNI
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+
+// --------------------------------------------------------
+#define UNUSED_CHILD_EXIT_STATUS -666
+#define DEBUG 0
+// --------------------------------------------------------
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -75,51 +76,64 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-// --------------------------------------------------------
 // child helper functions----------------------------------
-
-static void print_child_list(struct list* child_list){
+// print_child_list:
+// what it does: prints child information, for debug purposes
+// input: child_list - list struct of children
+// returns: void
+static void print_child_list (struct list* child_list)
+{
   struct list_elem *e;
 
   for (e = list_begin (child_list); e != list_end (child_list);
        e = list_next (e))
+  {
+    struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+    if (DEBUG)
+      printf ("[TID: %d: %s][ptr:%p][ES:%d]\n",tcp->tid, tcp->child_pointer->name, tcp->child_pointer, tcp->exit_status);
+  }
+}
+// has_child:
+// what it does: checks if the child exists in the child list
+// input: child_tid - tid of a child
+// returns: if tid is a child of the current thread
+static bool has_child(tid_t child_tid)
+{
+  struct list_elem *e;
+  struct list* child_list = &thread_current ()->children;
+
+  for (e = list_begin (child_list); e != list_end (child_list);
+     e = list_next (e))
+  {
+    struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+    if (tcp->tid == child_tid)
     {
-      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
-      printf("[TID: %d: %s][ptr:%p][ES:%d]\n",tcp->tid, tcp->child_pointer->name, tcp->child_pointer, tcp->exit_status);
+      return true;
     }
   }
+  return false;
+}
+// get_child_by_tid:
+// what it does: gets a thread pointer by its child's TID
+// input: child_tid - tid of a child
+// returns: thread pointer of child
+struct thread* get_child_by_tid (tid_t child_tid)
+{
+  struct list_elem *e;
+  struct list* child_list = &thread_current ()->children;
 
-  // checks if the child exists in the child list
-  static bool has_child(tid_t child_tid){
-    struct list_elem *e;
-    struct list* child_list = &thread_current()->children;
-
-    for (e = list_begin (child_list); e != list_end (child_list);
-       e = list_next (e))
+  for (e = list_begin (child_list); e != list_end (child_list);
+     e = list_next (e))
+  {
+    struct thread_child *tcp = list_entry (e, struct thread_child, elem);
+    if (tcp->tid == child_tid)
     {
-      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
-      if (tcp->tid == child_tid){
-        return true;
-      }
+      return tcp->child_pointer;
     }
-    return false;
   }
-
-  struct thread* get_child_by_tid(tid_t child_tid){
-    struct list_elem *e;
-    struct list* child_list = &thread_current()->children;
-
-    for (e = list_begin (child_list); e != list_end (child_list);
-       e = list_next (e))
-    {
-      struct thread_child *tcp = list_entry (e, struct thread_child, elem);
-      if (tcp->tid == child_tid){
-        return tcp->child_pointer;
-      }
-    }
-    printf ("ERROR: tid %d not found in child list\n", child_tid);
-    return NULL;
-  }
+  printf ("ERROR: tid %d not found in child list\n", child_tid);
+  return NULL;
+}
 
 // --------------------------------------------------------
 
@@ -145,13 +159,14 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
 
-
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
-  sema_init(&initial_thread->sema, 0 );
+  //----------------------------------------------
+  sema_init (&initial_thread->sema, 0 );
+  //----------------------------------------------
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -237,42 +252,50 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
-  //--------------------------------------------
-    // initialize thread's semaphore
-    enum intr_level old_level;
 
-    old_level = intr_disable ();
-    printf("sema init on %s\n", t->name);
-    sema_init(&t->sema, 0);
-    intr_set_level (old_level);
-    
-    printf("%s sema init complete\n",t->name);
-    //sema_down(&t->sema);
-    // set child thread's parent
-    t->parent = thread_current();
+//--------------------------------------------
+  // initialize thread's semaphore
+  //enum intr_level old_level;
 
-    // add thread to list
-    printf("adding thread %d to thread %d\n", tid, thread_current()->tid);
-    // create thread_child struct of zero'd memory from kernel space
-    struct thread_child* child_struct_ptr = palloc_get_page(PAL_ZERO);
-    if( child_struct_ptr == NULL ) {
-      // if page wasnt allocated properly
-      return TID_ERROR;
-    } //otherwise, populate child struct
-    child_struct_ptr->tid = tid;
-    child_struct_ptr->child_pointer = t;
-    child_struct_ptr->exit_status = UNUSED_CHILD_EXIT_STATUS;
+  //old_level = intr_disable ();
+  if (DEBUG)
+    printf ("sema init on %s\n", t->name);
+  sema_init (&t->sema, 0);
+  //intr_set_level (old_level);
+  if (DEBUG)
+    printf ("%s sema init complete\n",t->name);
+  //sema_down(&t->sema);
+  // set child thread's parent
+  t->parent = thread_current();
 
-    // add to list
-    list_push_back(&(thread_current()->children), &child_struct_ptr->elem);
-    
-    // give child thread its elem in the child struct list
-    t->child_list_elem = &child_struct_ptr->elem;
-    ASSERT(has_child(tid));
-    printf("added and verified! printing contents:\n");
-    print_child_list(&thread_current()->children);
-    // ****** ADD REMOVAL OF PALLOC'D PAGE WHEN CHILD IS REAPED
+  // add thread to list
+  if (DEBUG)
+    printf ("adding thread %d to thread %d\n", tid, thread_current()->tid);
+  // create thread_child struct of zero'd memory from kernel space
+  struct thread_child* child_struct_ptr = palloc_get_page (PAL_ZERO);
+  if ( child_struct_ptr == NULL ) 
+  {
+    // if page wasnt allocated properly
+    return TID_ERROR;
+  } //otherwise, populate child struct
+  child_struct_ptr->tid = tid;
+  child_struct_ptr->child_pointer = t;
+  child_struct_ptr->exit_status = UNUSED_CHILD_EXIT_STATUS;
+  child_struct_ptr->parent_waiting = 0;
+
+  // add to list
+  list_push_back (&(thread_current ()->children), &child_struct_ptr->elem);
+  
+  // give child thread its elem in the child struct list
+  t->child_list_elem = &child_struct_ptr->elem;
+  ASSERT (has_child(tid));
+  if (DEBUG)
+  {
+    printf ("added and verified! printing contents:\n");
+    print_child_list (&thread_current()->children);
+  }
   //--------------------------------------------------
+
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -287,9 +310,7 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-  //-------------------------------------------------------------------
-  //sema_up(&t->sema);
-  //-------------------------------------------------------------------
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -383,7 +404,7 @@ thread_exit (void)
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
-  list_remove (&thread_current()->allelem);
+  list_remove (&thread_current ()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
@@ -551,16 +572,17 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (name != NULL);
 
   memset (t, 0, sizeof *t);
+
   //-----------------------------------------------------------
   list_init (&(t->children));
+  list_init (&(t->open_files));
   //-----------------------------------------------------------
-
+  
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-
 
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);
@@ -604,8 +626,8 @@ next_thread_to_run (void)
    the first time a thread is scheduled it is called by
    switch_entry() (see switch.S).
 
-   It's not safe to call printf() until the thread switch is
-   complete.  In practice that means that printf()s should be
+   It's not safe to call printf () until the thread switch is
+   complete.  In practice that means that printf ()s should be
    added at the end of the function.
 
    After this function and its caller returns, the thread switch
@@ -645,7 +667,7 @@ thread_schedule_tail (struct thread *prev)
    running to some other state.  This function finds another
    thread to run and switches to it.
 
-   It's not safe to call printf() until thread_schedule_tail()
+   It's not safe to call printf () until thread_schedule_tail()
    has completed. */
 static void
 schedule (void) 
