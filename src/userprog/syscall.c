@@ -98,7 +98,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         hex_dump ((f->esp), (f->esp), 80, 1);
       }
       arg_error_check (f->esp,1);
-      f->eax = exec (f->esp + 4);
+      f->eax = exec (*(char**)(f->esp + 4));
       break;
     }
     case SYS_WAIT:
@@ -270,12 +270,20 @@ void exit (int status)
 // returns: pid of executed process
 pid_t exec (const char *cmd_line)
 {
-  ASSERT(false); // tp speed up failure since implementation partial
+  //ASSERT(false); // tp speed up failure since implementation partial
   if (DEBUG)
+  {
     printf ("exec'ing %s\n", cmd_line);
+  }
   pid_t pid = process_execute (cmd_line);
+  if (DEBUG)
+  {
+    printf ("pid is %d\n", pid);
+  }
   struct thread_child* child_thread_ptr = get_child_by_tid (pid);
-  sema_down (&child_thread_ptr->child_pointer->sema);
+  if(DEBUG)
+    printf("????????");//%s exit status: %d \n", child_thread_ptr->child_pointer->name,child_thread_ptr->exit_status);
+  //sema_down (&child_thread_ptr->child_pointer->sema);
  
   return pid;
 }
@@ -288,7 +296,8 @@ int wait (pid_t pid)
 {
   if (DEBUG)
     printf ("wait called\n");
-
+  // sema down -----
+  sema_down(&thread_current ()-> sema);
   return process_wait (pid);
 }
 // create:

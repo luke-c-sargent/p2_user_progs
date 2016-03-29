@@ -104,10 +104,11 @@ struct thread
 #endif
 
     // -----------------------------------------------------------
-    struct semaphore sema; 
+    struct semaphore sema;
     struct list children;
     struct list open_files;
     struct thread* parent;
+
     struct list_elem* child_list_elem;
     //------------------------------------------------------------
 

@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 //------------------------------------------------
-#define DEBUG 0
+#define DEBUG 1
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -84,7 +84,16 @@ process_execute (const char *file_name)
     hex_dump (fn_copy, fn_copy, 80, 1);
   }
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
-  
+  if(DEBUG)
+    printf("gettig TID %d child struct\n", tid);
+
+  //WRONG! it gives the child, not the thread_child
+  struct thread* child_thread_ptr = get_child_by_tid (tid);
+  if(DEBUG)
+  {
+    struct thread_child* tcp = get_child_struct_by_child(child_thread_ptr);
+    printf("!!!!!! %p exit status %d parent: %p\n", tcp, tcp->exit_status, tcp->child_pointer->parent);
+  }
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
 
@@ -102,7 +111,7 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
   if (DEBUG)
-    printf("filename: %s\n", file_name);
+    printf("starting filename: %s...........", file_name);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -113,7 +122,21 @@ start_process (void *file_name_)
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 
+  {
+    struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
+    child_struct_ptr->exit_status = SYSCALL_ERROR;
+    //if_.eax = SYSCALL_ERROR;
+    if(DEBUG)
+    {
+      printf("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
+      
+    }
     thread_exit ();
+  }
+  if(DEBUG)
+  {
+    printf("...  successfully loaded\n");
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -164,6 +187,9 @@ process_wait (tid_t child_tid)
     child_struct_ptr->parent_waiting = 1;
     sema_down (&thread_current()->sema);
   }
+  
+  //if(DEBUG)
+    //printf("exit status of %p: %s is now %d \n", child_struct_ptr->child_pointer, child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
 
   return child_struct_ptr->exit_status;
   // --------------------------------------------------------

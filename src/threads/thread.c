@@ -26,7 +26,8 @@ static struct list ready_list;
 
 // --------------------------------------------------------
 #define UNUSED_CHILD_EXIT_STATUS -666
-#define DEBUG 0
+#define DEBUG 1
+
 // --------------------------------------------------------
 
 /* List of all processes.  Processes are added to this list
@@ -131,8 +132,13 @@ struct thread* get_child_by_tid (tid_t child_tid)
       return tcp->child_pointer;
     }
   }
-  printf ("ERROR: tid %d not found in child list\n", child_tid);
+  if(DEBUG)
+    printf ("ERROR: tid %d not found in child list\n", child_tid);
   return NULL;
+}
+
+struct thread_child* get_child_struct_by_child(struct thread* tp){
+  return list_entry (tp->child_list_elem, struct thread_child, elem);
 }
 
 // --------------------------------------------------------
@@ -266,7 +272,6 @@ thread_create (const char *name, int priority,
     printf ("%s sema init complete\n",t->name);
   //sema_down(&t->sema);
   // set child thread's parent
-  t->parent = thread_current();
 
   // add thread to list
   if (DEBUG)
@@ -275,13 +280,22 @@ thread_create (const char *name, int priority,
   struct thread_child* child_struct_ptr = palloc_get_page (PAL_ZERO);
   if ( child_struct_ptr == NULL ) 
   {
+    if(DEBUG)
+      printf("child_struct allocation of page failed\n");
     // if page wasnt allocated properly
     return TID_ERROR;
   } //otherwise, populate child struct
+
   child_struct_ptr->tid = tid;
   child_struct_ptr->child_pointer = t;
   child_struct_ptr->exit_status = UNUSED_CHILD_EXIT_STATUS;
   child_struct_ptr->parent_waiting = 0;
+  t->parent = thread_current();
+
+  if(DEBUG){
+    printf("populating child struct TID: %d at addr %p\n", tid, t);
+    printf("setting parent to %p, %s \n", t->parent, t->parent->name);
+  }
 
   // add to list
   list_push_back (&(thread_current ()->children), &child_struct_ptr->elem);
