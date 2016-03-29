@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 //------------------------------------------------
-#define DEBUG 1
+#define DEBUG 0
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -78,16 +78,16 @@ process_execute (const char *file_name)
     ++indexer;
   }
   /* Create a new thread to execute FILE_NAME. */
+  /*
   if (DEBUG)
   {
     printf ("fn_copy hexdump:\n");
     hex_dump (fn_copy, fn_copy, 80, 1);
-  }
+  }*/
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
   if(DEBUG)
     printf("gettig TID %d child struct\n", tid);
 
-  //WRONG! it gives the child, not the thread_child
   struct thread* child_thread_ptr = get_child_by_tid (tid);
   if(DEBUG)
   {
@@ -182,16 +182,22 @@ process_wait (tid_t child_tid)
   }
   
   // if the status hasn't been set, child hasn't exited
-  if (child_struct_ptr->exit_status == UNUSED_CHILD_EXIT_STATUS)
+  if (child_struct_ptr->parent_waiting == 0)
   {
+    if(DEBUG)
+      printf("% s's parent sema-downing\n", child_struct_ptr->child_pointer->name);
     child_struct_ptr->parent_waiting = 1;
     sema_down (&thread_current()->sema);
   }
-  
+  exit_status = child_struct_ptr->exit_status;
+  // remove child from child list
+  list_remove(&child_struct_ptr->elem);
+
+
   //if(DEBUG)
     //printf("exit status of %p: %s is now %d \n", child_struct_ptr->child_pointer, child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
 
-  return child_struct_ptr->exit_status;
+  return exit_status;
   // --------------------------------------------------------
 }
 
@@ -332,6 +338,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
+      // HERE IS WHERE WORK SHOULD CONTINUE ON EXIT STUFF
+      //get_child_struct_by_child(&thread_current())->exit
       goto done; 
     }
 
@@ -614,14 +622,14 @@ setup_stack (void **esp, char * arg_array)
   *((int*)my_cpp) = argc; // place argc on stack
 
   *esp = (void *) (my_cpp-1);
-
+/*
   // hex dump
   if (DEBUG)
   {
     printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
     hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
   }
-
+*/
   return success;
 }
 

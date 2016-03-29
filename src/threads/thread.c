@@ -26,7 +26,7 @@ static struct list ready_list;
 
 // --------------------------------------------------------
 #define UNUSED_CHILD_EXIT_STATUS -666
-#define DEBUG 1
+#define DEBUG 0
 
 // --------------------------------------------------------
 
