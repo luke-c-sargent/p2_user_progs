@@ -104,12 +104,14 @@ struct thread
 #endif
 
     // -----------------------------------------------------------
-    struct semaphore sema;
+    struct file* executable;
+    struct semaphore wait_sema;
     struct list children;
     struct list open_files;
     struct thread* parent;
+    struct semaphore load_sema;
 
-    struct list_elem* child_list_elem;
+    struct list_elem* child_list_elem; // this is stupid
     //------------------------------------------------------------
 
     /* Owned by thread.c. */
@@ -175,6 +177,6 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 // --------------------------------------------------------------------
-struct thread* get_child_by_tid(tid_t child_tid);
+struct thread_child* get_child_by_tid(tid_t child_tid);
 
 #endif /* threads/thread.h */

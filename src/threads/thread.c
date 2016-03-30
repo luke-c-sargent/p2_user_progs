@@ -26,7 +26,7 @@ static struct list ready_list;
 
 // --------------------------------------------------------
 #define UNUSED_CHILD_EXIT_STATUS -666
-#define DEBUG 1
+#define DEBUG 0
 
 // --------------------------------------------------------
 
@@ -118,7 +118,7 @@ static bool has_child(tid_t child_tid)
 // what it does: gets a thread pointer by its child's TID
 // input: child_tid - tid of a child
 // returns: thread pointer of child
-struct thread* get_child_by_tid (tid_t child_tid)
+struct thread_child* get_child_by_tid (tid_t child_tid)
 {
   struct list_elem *e;
   struct list* child_list = &thread_current ()->children;
@@ -129,7 +129,7 @@ struct thread* get_child_by_tid (tid_t child_tid)
     struct thread_child *tcp = list_entry (e, struct thread_child, elem);
     if (tcp->tid == child_tid)
     {
-      return tcp->child_pointer;
+      return tcp;
     }
   }
   if(DEBUG)
@@ -176,7 +176,7 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
   //----------------------------------------------
-  sema_init (&initial_thread->sema, 0 );
+  //sema_init (&initial_thread->wait_sema, 0 );
   //----------------------------------------------
 }
 
@@ -263,15 +263,12 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
-
 //--------------------------------------------
   // initialize thread's semaphore
-  //enum intr_level old_level;
 
   //old_level = intr_disable ();
   if (DEBUG)
     printf ("sema init on %s\n", t->name);
-  sema_init (&t->sema, 0);
   //intr_set_level (old_level);
   if (DEBUG)
     printf ("%s sema init complete\n",t->name);
@@ -288,6 +285,7 @@ thread_create (const char *name, int priority,
     if(DEBUG)
       printf("child_struct allocation of page failed\n");
     // if page wasnt allocated properly
+    //ASSERT(false);
     return TID_ERROR;
   } //otherwise, populate child struct
 
@@ -297,8 +295,11 @@ thread_create (const char *name, int priority,
   child_struct_ptr->parent_waiting = 0;
   t->parent = thread_current();
 
+
+
   if(DEBUG){
-    printf("populating child struct TID: %d at addr %p\n", tid, t);
+    printf("child_tp: %p\n", t);
+    printf("populating child struct TID: %d at addr %p\n", tid, child_struct_ptr);
     printf("setting parent to %p, %s \n", t->parent, t->parent->name);
   }
 
@@ -307,6 +308,7 @@ thread_create (const char *name, int priority,
   
   // give child thread its elem in the child struct list
   t->child_list_elem = &child_struct_ptr->elem;
+  //printf("child list elem: %p\n", t->child_list_elem);
   ASSERT (has_child(tid));
   if (DEBUG)
   {
@@ -416,6 +418,10 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
+  //------------------------
+  sema_up (&thread_current()->parent->wait_sema);
+  file_close (thread_current()->executable);
+  //------------------------
   process_exit ();
 #endif
 
@@ -595,6 +601,8 @@ init_thread (struct thread *t, const char *name, int priority)
   //-----------------------------------------------------------
   list_init (&(t->children));
   list_init (&(t->open_files));
+  sema_init (&(t->load_sema), 0);
+  sema_init (&t->wait_sema, 0);
   //-----------------------------------------------------------
   
   t->status = THREAD_BLOCKED;

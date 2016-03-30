@@ -22,7 +22,7 @@ bool is_user_and_mapped (void* addr);
 //-----------------------------------------------
 static void syscall_handler (struct intr_frame *);
 
-#define DEBUG 1
+#define DEBUG 0
 
 void
 syscall_init (void) 
@@ -211,7 +211,8 @@ syscall_handler (struct intr_frame *f UNUSED)
       if (DEBUG)
         printf ("SYS_SEEK signal\n");
       arg_error_check (f->esp,2);
-      seek (*(int*)(f->esp+4), *(unsigned*)(f->esp+4));
+
+      seek (*(int*)(f->esp+4), *(unsigned*)(f->esp+8));
       break;
     }
     case SYS_TELL:
@@ -258,6 +259,8 @@ void exit (int status)
   if (DEBUG)
     printf ("child %s exited with status %d\n", child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
   printf ("%s: exit(%d)\n", child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
+  
+  /*
   if (child_struct_ptr->parent_waiting)
   {
     if(DEBUG){
@@ -265,7 +268,7 @@ void exit (int status)
     }
     child_struct_ptr->parent_waiting = 0;
     sema_up (&child_struct_ptr->child_pointer->parent->sema);
-  }
+  }*/
 
   thread_exit();
 }
@@ -306,20 +309,23 @@ pid_t exec (const char *cmd_line)
   }
 
   pid_t pid = process_execute (cmd_line);
+
   if(DEBUG)
     printf("EXEC: sema'ing down on: %s\n",thread_current()->name);
-  struct thread_child* child_thread_ptr = get_child_struct_by_child(get_child_by_tid (pid));
+  struct thread_child* child_thread_ptr = get_child_by_tid (pid);
   child_thread_ptr->parent_waiting = 1;
-  sema_down (&thread_current()->sema);
+
+  sema_down (&thread_current()->load_sema);
   if (DEBUG)
   {
-    printf ("EXEC: pid is %d\n", pid);
+    printf ("EXEC: pid is %d, exit status %d\n", pid, child_thread_ptr->exit_status);
   }
   
 
-  if(DEBUG)
-    printf("EXEC: %s exit status: %d \n", child_thread_ptr->child_pointer->parent->name, child_thread_ptr->exit_status);
-  
+  //if(DEBUG)
+    //printf("EXEC: %s exit status: %d \n", child_thread_ptr->child_pointer->parent->name, child_thread_ptr->exit_status);
+  if(child_thread_ptr->exit_status == SYSCALL_ERROR)
+    return SYSCALL_ERROR;
   //wait(pid);
   return pid;
 }
@@ -334,26 +340,27 @@ int wait (pid_t pid)
     printf ("wait called on PID %d\n", pid);
   // fail cases:
   // -- pid not child:
-  struct thread* child_ptr = get_child_by_tid(pid);
+  // struct thread* child_ptr = get_child_by_tid(pid);
 
-  if(child_ptr == NULL){
-    if(DEBUG)
-      printf("child pointer is bad\n");
-    return SYSCALL_ERROR;    
-  }
+  // if(child_ptr == NULL){
+  //   if(DEBUG)
+  //     printf("child pointer is bad\n");
+  //   return SYSCALL_ERROR;    
+  // }
 
-  if(DEBUG)
-    printf("thread %p: %s gotten\n", child_ptr, child_ptr->name);
+  // if(DEBUG)
+  //   printf("thread %p: %s gotten\n", child_ptr, child_ptr->name);
 
-  struct thread_child* thread_cp = get_child_struct_by_child(child_ptr);
+  // struct thread_child* thread_cp = get_child_struct_by_child(child_ptr);
 
-    
+   /* 
   // is already waiting
+  printf("OHNOES!!!!!!!!!    %p\n", thread_cp);
   if(thread_cp->parent_waiting != 0){
     if(DEBUG)
       printf("already waiting\n");
     return SYSCALL_ERROR;
-  }
+  }*/
 
   // sema down -----
   //sema_down(&thread_current ()-> sema);
@@ -603,7 +610,7 @@ unsigned tell (int fd)
 	sema_down(&filesys_sema);
 	unsigned rval = file_tell (file_ptr);
 	sema_up(&filesys_sema);
-    return rval;
+  return rval;
 }
 // close:
 // what it does: closes an open file

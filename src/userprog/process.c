@@ -88,7 +88,7 @@ process_execute (const char *file_name)
   if(DEBUG)
     printf("gettig TID %d child struct\n", tid);
 
-  struct thread* child_thread_ptr = get_child_by_tid (tid);
+  struct thread* child_thread_ptr = get_child_by_tid (tid)->child_pointer;
   if(DEBUG)
   {
     struct thread_child* tcp = get_child_struct_by_child(child_thread_ptr);
@@ -177,8 +177,10 @@ process_wait (tid_t child_tid)
 {
   // added --------------------------------------------------
   // check: invalid TID, not child, process_wait already called
-  struct thread* child_tp = get_child_by_tid (child_tid);
-  if (child_tp == NULL)
+  // struct thread* child_tp = get_child_by_tid (child_tid);
+  struct thread_child* child_struct_ptr  = get_child_by_tid (child_tid);
+
+  if (child_struct_ptr == NULL)
   {
     if (DEBUG)
       printf("NULL child tid in process_wait; tid not found\n");
@@ -187,23 +189,25 @@ process_wait (tid_t child_tid)
   }
 
   int exit_status = 1;
-  
-  // get the child struct pointer for use with synchronization
-  struct thread_child* child_struct_ptr  = list_entry (child_tp->child_list_elem, struct thread_child, elem);
 
+  // get the child struct pointer for use with synchronization
+  //printf("child struct pointer %p \n", child_struct_ptr);
   if (DEBUG)
   {
     printf ("child exit status during process wait: %d\n", child_struct_ptr->exit_status);
   }
-  
+  //printf("child struct tid %d \n", child_struct_ptr->tid);
   // if the status hasn't been set, child hasn't exited
+  sema_down (&thread_current()->wait_sema);
+  /*
   if (child_struct_ptr->parent_waiting == 0)
   {
     if(DEBUG)
       printf("% s's parent sema-downing\n", child_struct_ptr->child_pointer->name);
     child_struct_ptr->parent_waiting = 1;
     sema_down (&thread_current()->sema);
-  }
+  }*/
+  //printf("child struct pointer 2 %p \n", child_struct_ptr);
   exit_status = child_struct_ptr->exit_status;
   // remove child from child list
   list_remove(&child_struct_ptr->elem);
@@ -350,6 +354,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Open executable file. */
   file = filesys_open (file_name);
+  thread_current()->executable = file;
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -360,7 +365,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
       tcp->exit_status = SYSCALL_ERROR;
       goto done; 
     }
-
+  // ----------------------------------
+  file_deny_write(file);
+  // ----------------------------------
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -447,18 +454,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   success = true;
 
- done:
+done:
+  success = success;
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  //  file_close (file);
   // ADDED FOR EXEC-MISSING
   struct thread_child* tcp = get_child_struct_by_child(thread_current());
+  if(!success)
+    tcp->exit_status = SYSCALL_ERROR;
+
+  tcp->parent_waiting = 0;
+  sema_up(&thread_current()->parent->load_sema);
+
+  /*
   if(tcp->parent_waiting){
     if(DEBUG)
       printf("Sema up on %s \n", thread_current()->parent->name);
     tcp->parent_waiting = 0;
     tcp->exit_status = SYSCALL_ERROR;
-    sema_up(&thread_current()->parent->sema);
-  }
+    sema_up(&thread_current()->parent->load_sema);
+  }*/
   
   return success;
 }
