@@ -4,6 +4,11 @@
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+//--------------
+#include "userprog/syscall.h"
+
+#define SYSCALL_ERROR -1
+//--------------------
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -141,6 +146,13 @@ page_fault (struct intr_frame *f)
      be assured of reading CR2 before it changed). */
   intr_enable ();
 
+  //=========================================
+  if (fault_addr == NULL)
+  {
+    exit(SYSCALL_ERROR);
+  }
+  //=========================================
+
   /* Count page faults. */
   page_fault_cnt++;
 
@@ -158,8 +170,8 @@ page_fault (struct intr_frame *f)
           write ? "writing" : "reading",
           user ? "user" : "kernel");
 
-  printf("There is like totally a lot of crying in Pintos!\n");
-  printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
+  //printf("There is like totally a lot of crying in Pintos!\n");
+  //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
   kill (f);
 }
 
