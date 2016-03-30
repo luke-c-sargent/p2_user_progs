@@ -22,7 +22,7 @@ bool is_user_and_mapped (void* addr);
 //-----------------------------------------------
 static void syscall_handler (struct intr_frame *);
 
-#define DEBUG 0
+#define DEBUG 1
 
 void
 syscall_init (void) 
@@ -41,6 +41,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     hex_dump ((f->esp), (f->esp), 112, 1);
   }
 */
+  if(DEBUG)
+    printf("syscall handler\n");
   // validate initial memory access
   int valid_memory=1;
 
@@ -274,10 +276,29 @@ void exit (int status)
 // returns: pid of executed process
 pid_t exec (const char *cmd_line)
 {
-  //ASSERT(false); // tp speed up failure since implementation partial
-
   if(!is_user_and_mapped(cmd_line))
     return SYSCALL_ERROR;
+/*
+  // hacky test, i dont like it:
+  // get file name
+  char filename[15]; // max filename size
+  int i = 0;
+  while(cmd_line[i] != ' '){
+    filename[i] = cmd_line[i];
+    ++i;
+    if(i==14)
+      break;
+  }
+  filename[i]= 0;
+  //printf("---%s\n", filename);
+  if(open(filename) != SYSCALL_ERROR)
+    printf("");//close(cmd_line); // doesntwork yet :C
+  else{
+    if(DEBUG)
+      printf("%s ERROR!!!!!",cmd_line);
+    return SYSCALL_ERROR;
+  }
+  // end hacky test*/
 
   if (DEBUG)
   {
@@ -285,15 +306,21 @@ pid_t exec (const char *cmd_line)
   }
 
   pid_t pid = process_execute (cmd_line);
+  if(DEBUG)
+    printf("EXEC: sema'ing down on: %s\n",thread_current()->name);
+  struct thread_child* child_thread_ptr = get_child_struct_by_child(get_child_by_tid (pid));
+  child_thread_ptr->parent_waiting = 1;
+  sema_down (&thread_current()->sema);
   if (DEBUG)
   {
-    printf ("pid is %d\n", pid);
+    printf ("EXEC: pid is %d\n", pid);
   }
-  struct thread_child* child_thread_ptr = get_child_by_tid (pid);
+  
+
   if(DEBUG)
-    printf("????????");//%s exit status: %d \n", child_thread_ptr->child_pointer->name,child_thread_ptr->exit_status);
-  //sema_down (&child_thread_ptr->child_pointer->sema);
- 
+    printf("EXEC: %s exit status: %d \n", child_thread_ptr->child_pointer->parent->name, child_thread_ptr->exit_status);
+  
+  //wait(pid);
   return pid;
 }
 
@@ -398,8 +425,10 @@ int open (const char *file)
     printf ("   ... success!\n");
   
   //check if first character is null
-  if (file == NULL || *file == NULL)
+  if (file == NULL || *file == NULL){
+    sema_up (&filesys_sema);
     return SYSCALL_ERROR;
+  }
 
   struct file* opened_file = filesys_open (file);
 
@@ -407,6 +436,7 @@ int open (const char *file)
   {
     if (DEBUG)
       printf ("filesystem open error\n");
+    sema_up (&filesys_sema);
     return SYSCALL_ERROR;
   }
   // get new page, place file struct in it to avoid deallocation
@@ -582,7 +612,8 @@ unsigned tell (int fd)
 void close (int fd)
 {
 	// unimplemented
-    ASSERT(false); // to speed up failure
+    //ASSERT(false); // to speed up failure
+  file_close(fd_to_file_ptr(fd));
 }
 
 // HELPER FUNCTIONS---------------------------

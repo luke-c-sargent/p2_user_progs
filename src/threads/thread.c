@@ -26,7 +26,7 @@ static struct list ready_list;
 
 // --------------------------------------------------------
 #define UNUSED_CHILD_EXIT_STATUS -666
-#define DEBUG 0
+#define DEBUG 1
 
 // --------------------------------------------------------
 
@@ -139,6 +139,11 @@ struct thread* get_child_by_tid (tid_t child_tid)
 
 struct thread_child* get_child_struct_by_child(struct thread* tp){
   return list_entry (tp->child_list_elem, struct thread_child, elem);
+}
+
+// file helper functions
+bool thread_has_file(){
+
 }
 
 // --------------------------------------------------------

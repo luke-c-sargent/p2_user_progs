@@ -119,17 +119,32 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
+  // ADDED----------------------------------------------------
+  //sema_up(&child_struct_ptr->child_pointer->sema);
+  // ADDED----------------------------------------------------
   /* If load failed, quit. */
   palloc_free_page (file_name);
+  struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
+  if(!success)
+    child_struct_ptr->exit_status = SYSCALL_ERROR;
+  
+  if(child_struct_ptr->parent_waiting){
+    if(DEBUG)
+      printf("child thread sema'ing up on: %s\n",child_struct_ptr->child_pointer->parent->name);
+    //child_struct_ptr->parent_waiting = 0;
+    //sema_up(&child_struct_ptr->child_pointer->parent->sema);
+    
+  }
   if (!success) 
   {
-    struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
+    
     child_struct_ptr->exit_status = SYSCALL_ERROR;
     //if_.eax = SYSCALL_ERROR;
     if(DEBUG)
     {
       printf("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
-      
+      //if_.eax = SYSCALL_ERROR;
+      //exit(-1);
     }
     thread_exit ();
   }
@@ -339,7 +354,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
     {
       printf ("load: %s: open failed\n", file_name);
       // HERE IS WHERE WORK SHOULD CONTINUE ON EXIT STUFF
-      //get_child_struct_by_child(&thread_current())->exit
+      struct thread_child* tcp = get_child_struct_by_child(thread_current());
+      if(DEBUG)
+        printf("%s failed its load\n", tcp->child_pointer->name);
+      tcp->exit_status = SYSCALL_ERROR;
       goto done; 
     }
 
@@ -432,6 +450,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
  done:
   /* We arrive here whether the load is successful or not. */
   file_close (file);
+  // ADDED FOR EXEC-MISSING
+  struct thread_child* tcp = get_child_struct_by_child(thread_current());
+  if(tcp->parent_waiting){
+    if(DEBUG)
+      printf("Sema up on %s \n", thread_current()->parent->name);
+    tcp->parent_waiting = 0;
+    tcp->exit_status = SYSCALL_ERROR;
+    sema_up(&thread_current()->parent->sema);
+  }
+  
   return success;
 }
 
