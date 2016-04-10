@@ -665,14 +665,7 @@ setup_stack (void **esp, char * arg_array)
   *((int*)my_cpp) = argc; // place argc on stack
 
   *esp = (void *) (my_cpp-1);
-/*
-  // hex dump
-  if (DEBUG)
-  {
-    printf("t:%d STACK HEX DUMP: \n", thread_current()->tid);
-    hex_dump(*esp, *esp, PHYS_BASE-*esp, 1);
-  }
-*/
+
   return success;
 }
 
