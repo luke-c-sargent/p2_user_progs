@@ -21,7 +21,7 @@
 //------------------------------------------------
 #include "vm/frame.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -438,7 +438,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
           break;
         }
     }
-
+  if(DEBUG)
+    printf("For Loop Complete\n");
   /* Set up stack. */
   if (!setup_stack (esp, file_name)){
     if (DEBUG)
@@ -446,6 +447,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf("!!SETUP_STACK FAILED\n");
     }
     goto done;
+  } else if(DEBUG){
+    printf("setup stack successful\n");
   }
 
   /* Start address. */
@@ -465,14 +468,8 @@ done:
   tcp->parent_waiting = 0;
   sema_up(&thread_current()->parent->load_sema);
 
-  /*
-  if(tcp->parent_waiting){
-    if(DEBUG)
-      printf("Sema up on %s \n", thread_current()->parent->name);
-    tcp->parent_waiting = 0;
-    tcp->exit_status = SYSCALL_ERROR;
-    sema_up(&thread_current()->parent->load_sema);
-  }*/
+  if(DEBUG)
+    printf("RETURNING SUCCESS = %d\n", success);
   
   return success;
 }
@@ -590,7 +587,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       upage += PGSIZE;
     }
   if(DEBUG)
-    printf("load_segment completed \n");
+    printf("load_segment completed with status true\n");
   return true;
 }
 
@@ -602,7 +599,10 @@ setup_stack (void **esp, char * arg_array)
   uint8_t *kpage;
   bool success = false;
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  //kpage = palloc_get_page (PAL_USER | PAL_ZERO); OLD
+  //-----------------------------------------------------------------
+  kpage = get_user_page();
+  //-----------------------------------------------------------------
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
