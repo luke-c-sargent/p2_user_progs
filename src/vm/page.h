@@ -6,7 +6,8 @@ enum SPT_status {
 	// SPT_USED,
 	// SPT_DIRTY,
 	SPT_WRITABLE,
-
+	SPT_STACK,
+	// IN SWAP?
 	LAST_ELEMENT_UNUSED
 };
 
@@ -14,8 +15,10 @@ enum SPT_status {
 const int status_count = LAST_ELEMENT_UNUSED - SPT_RESIDENT;
 
 struct SPT_entry{
-	struct bitmap *status_map; // needs 
-	struct hash_elem SPT_elem;
+	struct bitmap *status_map;
+	int frame_number;
+	// PT ENTRY?
+	//struct hash_elem SPT_elem;
 };
 
 struct SPT_entry *SPT;
