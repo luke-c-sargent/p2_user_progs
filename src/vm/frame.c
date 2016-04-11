@@ -4,8 +4,9 @@
 #include "threads/vaddr.h"
 
 static int max_frame;
+static int bump_ptr;
 
-struct FrameTableEntry* alloc_frame_table(){
+struct FrameTableEntry* alloc_frame_table(void){
 	int count = 1;
 	void* page_ptr = 1;
 	void* last_ptr = 0;
@@ -32,7 +33,23 @@ struct FrameTableEntry* alloc_frame_table(){
 	return ft_ptr;
 }
 
-void init_frame_table(){
+void init_frame_table(void){
 	sema_init(&FT_sema, 0);
 	frame_table = alloc_frame_table();
+}
+
+uint8_t * get_user_page(void){
+	int total = 0;
+	while (frame_table[bump_ptr].status == FT_FULL){
+		++bump_ptr;
+		++total;
+		if(bump_ptr == max_frame)
+			bump_ptr = 0;
+		if(total == max_frame){
+			break;
+			// evict instead of break, get bump_ptr to evicted mem, update status
+		}
+	}
+	frame_table[bump_ptr].status = FT_FULL;
+	return frame_table[bump_ptr].frame_ptr;
 }

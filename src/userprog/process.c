@@ -19,7 +19,9 @@
 #include "threads/vaddr.h"
 
 //------------------------------------------------
-#define DEBUG 0
+#include "vm/frame.h"
+
+#define DEBUG 1
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -119,9 +121,7 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-  // ADDED----------------------------------------------------
-  //sema_up(&child_struct_ptr->child_pointer->sema);
-  // ADDED----------------------------------------------------
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
   struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
@@ -139,12 +139,11 @@ start_process (void *file_name_)
   {
     
     child_struct_ptr->exit_status = SYSCALL_ERROR;
-    //if_.eax = SYSCALL_ERROR;
+
     if(DEBUG)
     {
       printf("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
-      //if_.eax = SYSCALL_ERROR;
-      //exit(-1);
+
     }
     thread_exit ();
   }
@@ -559,14 +558,21 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
+      // ---------------------------------------------------------------
+      //uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
+      uint8_t *kpage = get_user_page();
+      if(DEBUG)
+        printf("kpage ptr gotten: %p\n", kpage);
+      // ---------------------------------------------------------------
       if (kpage == NULL)
         return false;
 
       /* Load this page. */
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
-          palloc_free_page (kpage);
+          palloc_free_page (kpage); // must change this
+          if(DEBUG)
+            printf("WAT DO\n");
           return false; 
         }
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
