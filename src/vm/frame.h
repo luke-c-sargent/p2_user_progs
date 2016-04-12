@@ -14,7 +14,8 @@ struct FrameTableEntry {
 };
 
 struct FrameTableEntry* frame_table;
-struct semaphore FT_sema;
+
+struct semaphore paging_sema;
 
 // function declarations
 struct FrameTableEntry* alloc_frame_table(void);

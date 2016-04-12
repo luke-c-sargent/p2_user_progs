@@ -198,14 +198,7 @@ process_wait (tid_t child_tid)
   //printf("child struct tid %d \n", child_struct_ptr->tid);
   // if the status hasn't been set, child hasn't exited
   sema_down (&thread_current()->wait_sema);
-  /*
-  if (child_struct_ptr->parent_waiting == 0)
-  {
-    if(DEBUG)
-      printf("% s's parent sema-downing\n", child_struct_ptr->child_pointer->name);
-    child_struct_ptr->parent_waiting = 1;
-    sema_down (&thread_current()->sema);
-  }*/
+
   //printf("child struct pointer 2 %p \n", child_struct_ptr);
   exit_status = child_struct_ptr->exit_status;
   // remove child from child list
@@ -566,16 +559,15 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if(DEBUG)
         printf("load_segment: current frame is %s\n", thread_current()->name);
       // tid, stackptr, frame number
-      tid_t _tid = thread_current()->tid;
       int frame_number = frameptr_to_frame_num(kpage);
       if(DEBUG)
-        printf("passing to SPT: tid %d, frame no. %d, stackptr %x\n", _tid, frame_number, kpage);
+        printf("passing to SPT: tid %d, frame no. %d, stackptr %x\n", thread_current()->tid, frame_number, kpage);
 
 
       // Ali: setting SPT_entry.stack_ptr = kpage
       // need to initialize SPT_entry to something before insertion
-      struct SPT_entry* new_SPT_entry = create_SPT_entry(_tid, frame_number, kpage);
-      ASSERT(is_stack_spt_entry(new_SPT_entry));
+      struct SPT_entry* new_SPT_entry = create_SPT_entry(thread_current()->tid, frame_number, NULL/*stack page?*/);
+      //ASSERT(is_stack_spt_entry(new_SPT_entry));
       // file?
       // ofs?
       // upage?
@@ -639,14 +631,16 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp, char * arg_array)
+setup_stack (void **esp, char * arg_array) // modified signature
 {
   uint8_t *kpage;
   bool success = false;
 
   //kpage = palloc_get_page (PAL_USER | PAL_ZERO); OLD
   //-----------------------------------------------------------------
-  kpage = get_user_page();
+  kpage = get_user_page(); // this is the stack page
+    //insert this into the SPT NEED TO ADD SYNCH
+  struct SPT_entry* stack_spte = create_SPT_entry(thread_current()->tid, frameptr_to_frame_num(kpage), kpage);
   //-----------------------------------------------------------------
   if (kpage != NULL) 
     {

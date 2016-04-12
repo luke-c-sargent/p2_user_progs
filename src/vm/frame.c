@@ -33,7 +33,7 @@ struct FrameTableEntry* alloc_frame_table(void){
 }
 
 void init_frame_table(void){
-	sema_init(&FT_sema, 0);
+	sema_init(&paging_sema, 0);
 	frame_table = alloc_frame_table();
 }
 
