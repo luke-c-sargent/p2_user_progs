@@ -8,10 +8,9 @@ static int bump_ptr;
 
 struct FrameTableEntry* alloc_frame_table(void){
 	int count = 1;
-	void* page_ptr = 1;
-	void* last_ptr = 0;
-	last_ptr = palloc_get_page(PAL_USER);
-	page_ptr = palloc_get_page(PAL_USER);
+	
+	void* last_ptr = (void*) palloc_get_page(PAL_USER);;
+	void* page_ptr = (void*) palloc_get_page(PAL_USER);;
 	void* first_ptr = last_ptr;
 	while(page_ptr){
 		ASSERT((page_ptr - last_ptr) == PGSIZE);
@@ -52,4 +51,12 @@ uint8_t * get_user_page(void){
 	}
 	frame_table[bump_ptr].status = FT_FULL;
 	return frame_table[bump_ptr].frame_ptr;
+}
+
+uint32_t frameptr_to_frame_num(void* addr){
+	return ((int)addr-(int)frame_table[0].frame_ptr)/PGSIZE;
+}
+void* frame_num_to_frameptr(uint32_t frame_num){
+	ASSERT(frame_num <= max_frame);
+	return (void*)(PGSIZE*frame_num + (uint32_t)frame_table[0].frame_ptr);
 }

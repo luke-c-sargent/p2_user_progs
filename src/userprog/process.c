@@ -19,7 +19,6 @@
 #include "threads/vaddr.h"
 
 //------------------------------------------------
-#include "vm/frame.h"
 #include "vm/page.h"
 
 #define DEBUG 0
@@ -559,11 +558,24 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // ---------------------------------------------------------------
       // uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
 
+
+      
       // Ali: Is this congruent with our goal to only load the original stack frame?
       uint8_t *kpage = get_user_page();
+
+      if(DEBUG)
+        printf("load_segment: current frame is %s\n", thread_current()->name);
+      // tid, stackptr, frame number
+      tid_t _tid = thread_current()->tid;
+      int frame_number = frameptr_to_frame_num(kpage);
+      if(DEBUG)
+        printf("passing to SPT: tid %d, frame no. %d, stackptr %x\n", _tid, frame_number, kpage);
+
+
       // Ali: setting SPT_entry.stack_ptr = kpage
-      struct SPT_entry* new_SPT_entry = create_SPT_entry();
-      new_SPT_entry->stack_ptr = kpage;
+      // need to initialize SPT_entry to something before insertion
+      struct SPT_entry* new_SPT_entry = create_SPT_entry(_tid, frame_number, kpage);
+      ASSERT(is_stack_spt_entry(new_SPT_entry));
       // file?
       // ofs?
       // upage?
@@ -588,7 +600,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
             printf("WAT DO\n");
           return false; 
         }
-      // ---------------------------------------------
+      // -------------------------------   --------------
       /* Ali:
          This memset should instead be done when a page fault occurs
          (aka, TA slide) ONLY load the original stack frame at program startup.
