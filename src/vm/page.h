@@ -17,17 +17,15 @@ const int status_count = LAST_ELEMENT_UNUSED - SPT_RESIDENT;
 struct SPT_entry{
 	struct bitmap *status_map;
 	int frame_number;
+	uint8_t *stack_ptr; //Ali: does this need to be uint32_t?
 	// PT ENTRY?
 	//struct hash_elem SPT_elem;
 };
 
 struct SPT_entry *SPT;
+//add a semaphore
 
-void init_SPT(){
-	// allocate sufficient memory
-	SPT = malloc(sizeof(SPT_entry));
-	// initialize bit field
-	bitmap_create (size_t bit_cnt)
-
-	// other stuff
-}
+// function declaration
+//Ali
+void init_SPT(void);
+struct SPT_entry* create_SPT_entry(void){

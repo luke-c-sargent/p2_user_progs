@@ -164,7 +164,26 @@ page_fault (struct intr_frame *f)
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  
+
+  // --------------------------------------------------
+
+  /* Ali: what to do
+    1) Find the STE associated to fault_addr
+
+    2) Access the stack page from this STE
+
+    3) Memset a page of the stack page, but only a page. Then the
+    next time we page fault, memset another page of the stack,
+    and so on. This is what growing the stack is and it requires
+    keeping track of our position in the loading file as we increment
+    that pointer by PGSIZE
+
+    4) Update necessary parts of memory???
+  */
+
+  // --------------------------------------------------
+
+
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",

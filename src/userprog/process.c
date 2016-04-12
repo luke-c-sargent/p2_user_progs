@@ -20,6 +20,7 @@
 
 //------------------------------------------------
 #include "vm/frame.h"
+#include "vm/page.h"
 
 #define DEBUG 0
 #define UNUSED_CHILD_EXIT_STATUS -666
@@ -556,13 +557,28 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
       /* Get a page of memory. */
       // ---------------------------------------------------------------
-      //uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
+      // uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
+
+      // Ali: Is this congruent with our goal to only load the original stack frame?
       uint8_t *kpage = get_user_page();
+      // Ali: setting SPT_entry.stack_ptr = kpage
+      struct SPT_entry* new_SPT_entry = create_SPT_entry();
+      new_SPT_entry->stack_ptr = kpage;
+      // file?
+      // ofs?
+      // upage?
+      // read_bytes?
+      // zero_bytes?
+      // writable?
+
+
       if(DEBUG)
         printf("kpage ptr gotten: %p\n", kpage);
       // ---------------------------------------------------------------
       if (kpage == NULL)
         return false;
+
+      // Ali: Start
 
       /* Load this page. */
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
@@ -572,6 +588,21 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
             printf("WAT DO\n");
           return false; 
         }
+      // ---------------------------------------------
+      /* Ali:
+         This memset should instead be done when a page fault occurs
+         (aka, TA slide) ONLY load the original stack frame at program startup.
+        
+         memset() just sets null terminating address for our new frame 
+         (aka, set offset to 0), but since we don't actually put anything
+         in our frame until a page fault occurs, we don't need to set a null
+         terminating value yet.
+
+         Thus, I think we just need to store the pointer to the stack page (kpage)
+         inside of its STE. We should probably also store the arguments that are
+         passed to load_segment within the same STE 
+      */
+      // ---------------------------------------------
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
       /* Add the page to the process's address space. */
@@ -580,6 +611,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false; 
         }
+
+      // Ali: End
 
       /* Advance. */
       read_bytes -= page_read_bytes;
@@ -696,3 +729,4 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
