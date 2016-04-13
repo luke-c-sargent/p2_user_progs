@@ -37,8 +37,12 @@ struct SPT_entry* create_SPT_entry(tid_t tid, uint32_t frame_number, void* stack
 void remove_SPT_entry(struct SPT_entry* spte);
 void init_SPT(void);
 
+
 // hash func
 unsigned int hasher(const struct hash_elem *p_, void *aux UNUSED);
+
+struct SPT_entry* get_SPT_entry(tid_t tid, void* paddr);
+
 // less func
 bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,
            void *aux UNUSED);

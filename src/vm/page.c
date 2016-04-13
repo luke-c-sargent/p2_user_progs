@@ -4,7 +4,7 @@
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 //Ali: added this function
 struct SPT_entry* create_SPT_entry(tid_t tid, uint32_t frame_number, void* stack_page_ptr){ // might want to pass init values here
@@ -49,6 +49,24 @@ unsigned int hasher(const struct hash_elem *p_, void *aux UNUSED){
 	return hash_bytes (&digest, sizeof digest);
 
 }
+
+struct SPT_entry* get_SPT_entry(tid_t tid, void* paddr){
+	//struct hash_elem e = 
+
+	int frame_number = frameptr_to_frame_num(paddr);
+
+	struct hash_iterator i;
+	struct hash_elem* e;
+	hash_first (&i, &SPT);
+	while ((e = hash_next (&i)))
+ 	{
+    	struct SPT_entry *temp = hash_entry (hash_cur (&i), struct SPT_entry, hash_elem);
+    	if(tid == temp->owner_tid && frame_number == temp->frame_number)
+    		return temp;
+ 	}
+ 	return NULL;
+}
+
 // less func
 // sort by TID and frame number. 
 // a is > if a->owner_tid is > than b->owner_tid
