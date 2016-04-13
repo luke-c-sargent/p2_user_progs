@@ -422,9 +422,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
-              if (!load_segment (file, file_page, (void *) mem_page,
-                                 read_bytes, zero_bytes, writable))
-                goto done;
+              /*if (!load_segment (file, file_page, (void *) mem_page,
+                                 read_bytes, zero_bytes, writable))*/
+                //goto done;
             }
           else
             goto done;
@@ -450,7 +450,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   success = true;
 
 done:
-  success = success;
+  success = success; // thanks john; goto is weird
   /* We arrive here whether the load is successful or not. */
   //  file_close (file);
   // ADDED FOR EXEC-MISSING
@@ -566,7 +566,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
       // Ali: setting SPT_entry.stack_ptr = kpage
       // need to initialize SPT_entry to something before insertion
-      struct SPT_entry* new_SPT_entry = create_SPT_entry(thread_current()->tid, frame_number, NULL/*stack page?*/);
+      //struct SPT_entry* new_SPT_entry = create_SPT_entry(thread_current()->tid, frame_number, NULL/*stack page?*/);
+      //new_SPT_entry->stack_ptr = kpage;
       //ASSERT(is_stack_spt_entry(new_SPT_entry));
       // file?
       // ofs?
@@ -589,10 +590,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         {
           palloc_free_page (kpage); // must change this
           if(DEBUG)
-            printf("WAT DO\n");
+            printf("LOAD_SEGMENT: bad file read\n");
           return false; 
         }
-      // -------------------------------   --------------
+      // ---------------------------------------------
       /* Ali:
          This memset should instead be done when a page fault occurs
          (aka, TA slide) ONLY load the original stack frame at program startup.

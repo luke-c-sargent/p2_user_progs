@@ -6,8 +6,10 @@
 #include "threads/thread.h"
 //--------------
 #include "userprog/syscall.h"
+#include "threads/vaddr.h"
 
 #define SYSCALL_ERROR -1
+#define DEBUG 1
 //--------------------
 
 /* Number of page faults processed. */
@@ -170,7 +172,7 @@ page_fault (struct intr_frame *f)
   /* Ali: what to do
     1) Find the STE associated to fault_addr
 
-    2) Access the stack page from this STE
+    2) access the file and load PGSIZE of data starting from page start
 
     3) Memset a page of the stack page, but only a page. Then the
     next time we page fault, memset another page of the stack,
@@ -180,6 +182,34 @@ page_fault (struct intr_frame *f)
 
     4) Update necessary parts of memory???
   */
+  
+  struct thread* t = thread_current();
+
+  void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
+
+  if(DEBUG && paddr == NULL)
+    printf("Page Fault: VA is not mapped\n");
+
+  struct SPT_entry* result = get_SPT_entry(t->tid, paddr);
+  
+  void* page_start = pg_round_down (fault_addr);
+
+  if(DEBUG){
+    printf("thread %s fault address %x rounded to %x \n", thread_current()->name, fault_addr, page_start);
+  }
+
+  if(result){
+    /* load_segment (struct file *file, off_t ofs, uint8_t *upage,
+              uint32_t read_bytes, uint32_t zero_bytes, bool writable) */
+    struct file* fp = t->executable;
+    off_t ofs = fault_addr & PGMASK;
+    void* upg = fault_addr & ~PGMASK;
+    uint32_t read_bytes = ;
+    //load_segment(/*stuff*/);
+  }
+
+
+
 
   // --------------------------------------------------
 
