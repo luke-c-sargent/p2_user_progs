@@ -25,6 +25,8 @@ struct SPT_entry{
 	tid_t owner_tid;
 	uint8_t *stack_ptr; //Ali: uint32_t? ---->  no, its byte-addressable
 	// PT ENTRY?
+	//file name
+	//offset
 	struct hash_elem hash_elem;
 };
 
