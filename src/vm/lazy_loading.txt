@@ -1,0 +1,14 @@
+1) Load calls load_segment()
+
+2) Load_segement() loads the stack page first into physical memory and creates an STP_entry to represent it in virtual memory 
+	Q: Does this mean that we need to change load_segment to know which page is the stack page? Are we guaranteed the stack page starts at the given file offset?
+
+3) The while loop in load_segment() then creates STP_entry's that are correlated to each page in Virtual Memory. These pages have not been loaded into Physical memory yet, but they are recognized as existing in Virtual Memory. When these pages are accessed in Virtual Memory, a page fault occurs which will trigger us to load the physical pages of the executable file
+
+4) In the page fault handler, we have access to the current thread and we are given the virtual address of the page faulting page. From here, we must round down our virtual address to the the closest page.
+
+5) We then need to get the SPT_entry associated with this page of virtual memory.
+
+6) This SPT_entry should have the information that load_segmented needed in order to load the file into physical memory, such as the file, offset, and writable. We don't need the read or zero bytes since we know we are going to get a PGSIZE of the file, unless we reach the end of the file, and we can calculate the zero_bytes in that case using the output of file_read.
+
+7) It would be hear that we would file_read, memset, and install_page the file from disk into physical memory
