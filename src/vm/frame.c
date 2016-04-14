@@ -37,7 +37,7 @@ void init_frame_table(void){
 	frame_table = alloc_frame_table();
 }
 
-uint8_t * get_user_page(void){
+uint8_t * get_user_page(void){	//Ali: UPDATE PTE
 	int total = 0;
 	while (frame_table[bump_ptr].status == FT_FULL){
 		++bump_ptr;

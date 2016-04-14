@@ -204,7 +204,7 @@ page_fault (struct intr_frame *f)
     struct file* fp = t->executable;
     off_t ofs = fault_addr & PGMASK;
     void* upg = fault_addr & ~PGMASK;
-    uint32_t read_bytes = ;
+    uint32_t read_bytes = PGSIZE - ;
     //load_segment(/*stuff*/);
   } else {
     if(DEBUG)
