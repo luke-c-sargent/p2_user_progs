@@ -469,7 +469,7 @@ done:
 
 /* load() helpers. */
 
-static bool install_page (void *upage, void *kpage, bool writable);
+//static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
@@ -546,9 +546,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
          and zero the final PAGE_ZERO_BYTES bytes. */
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
-
-      struct SPT_entry* temp = create_SPT_entry(upage, false);  //Ali: May not need as variable
-
+      
+      // -----------------------------------------------------------------------
+      struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, writable);
+      ofs += PGSIZE;
+      // -----------------------------------------------------------------------
 
       // /* Get a page of memory. */
       // uint8_t *kpage = get_user_page();
@@ -590,7 +592,8 @@ setup_stack (void **esp, char * arg_array) // modified signature
   //-----------------------------------------------------------------
   kpage = get_user_page(); // this is the stack page
     //insert this into the SPT NEED TO ADD SYNCH
-  struct SPT_entry* stack_spte = create_SPT_entry(/* Ali: Need a vaddr */, true);
+  struct SPT_entry* stack_spte = create_SPT_entry((uint8_t *) PHYS_BASE - PGSIZE,
+      true, NULL, true);
   stack_spte->is_stack_page = true;
   //-----------------------------------------------------------------
   if (kpage != NULL) 
@@ -676,7 +679,7 @@ setup_stack (void **esp, char * arg_array) // modified signature
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-static bool
+bool
 install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();

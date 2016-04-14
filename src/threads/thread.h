@@ -98,6 +98,7 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -111,7 +112,10 @@ struct thread
     struct thread* parent;
     struct semaphore load_sema;
 
-    struct list_elem* child_list_elem; // this is stupid
+    struct list_elem* child_list_elem;
+
+    //vm additions
+    struct SPT* SP_table;
     //------------------------------------------------------------
 
     /* Owned by thread.c. */

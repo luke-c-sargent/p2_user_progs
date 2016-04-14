@@ -7,6 +7,8 @@
 //--------------
 #include "userprog/syscall.h"
 #include "threads/vaddr.h"
+#include "vm/page.h"
+#include "userprog/process.h"
 
 #define SYSCALL_ERROR -1
 #define DEBUG 1
@@ -182,36 +184,48 @@ page_fault (struct intr_frame *f)
 
     4) Update necessary parts of memory???
   */
-  
+
   struct thread* t = thread_current();
 
-  void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
+  //void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
 
-  if(DEBUG && paddr == NULL)
-    printf("Page Fault: VA is not mapped\n");
-
-  struct SPT_entry* result = get_SPT_entry(t->tid, paddr);
+  //if(DEBUG && paddr == NULL)
+    //printf("Page Fault: VA is not mapped\n");
   
   void* page_start = pg_round_down (fault_addr);
+
+  struct SPT_entry* result = get_SPT_entry(page_start);
 
   if(DEBUG){
     printf("thread %s fault address %x rounded to %x \n", thread_current()->name, fault_addr, page_start);
   }
 
   if(result){
-    /* load_segment (struct file *file, off_t ofs, uint8_t *upage,
-              uint32_t read_bytes, uint32_t zero_bytes, bool writable) */
-    struct file* fp = t->executable;
-    off_t ofs = fault_addr & PGMASK;
-    void* upg = fault_addr & ~PGMASK;
-    uint32_t read_bytes = PGSIZE - ;
-    //load_segment(/*stuff*/);
-  } else {
-    if(DEBUG)
-      printf("SPT fetch error\n");
-  }
+    file_seek (t->executable, result->ofs);
+    /* Get a page of memory. */
+    uint8_t *kpage = get_user_page();
+
+    if (kpage == NULL){
+      printf("KPAGE ALLOCATION FAIL\n"); // eviction
+    } else {
+      if(DEBUG)
+        printf("SPT fetch error\n");
+    }
 
 
+    /* Load this page. */
+    uint32_t read_bytes = 0;
+    read_bytes = file_read (t->executable, kpage, PGSIZE);
+    if(read_bytes)
+      memset (kpage + read_bytes, 0, PGSIZE-read_bytes);
+
+    /* Add the page to the process's address space. */
+    if (!install_page (page_start, kpage, result->writable)) 
+     {
+       palloc_free_page (kpage);
+       return false; 
+     }
+  } 
 
 
   // --------------------------------------------------
