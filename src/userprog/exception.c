@@ -206,6 +206,9 @@ page_fault (struct intr_frame *f)
     void* upg = fault_addr & ~PGMASK;
     uint32_t read_bytes = ;
     //load_segment(/*stuff*/);
+  } else {
+    if(DEBUG)
+      printf("SPT fetch error\n");
   }
 
 

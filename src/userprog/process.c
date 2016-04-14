@@ -17,7 +17,6 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-
 //------------------------------------------------
 #include "vm/page.h"
 
@@ -350,7 +349,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
-      // HERE IS WHERE WORK SHOULD CONTINUE ON EXIT STUFF
+
       struct thread_child* tcp = get_child_struct_by_child(thread_current());
       if(DEBUG)
         printf("%s failed its load\n", tcp->child_pointer->name);
@@ -403,7 +402,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
           if (validate_segment (&phdr, file)) 
             {
               bool writable = (phdr.p_flags & PF_W) != 0;
-              uint32_t file_page = phdr.p_offset & ~PGMASK;
+              uint32_t file_page = phdr.p_offset & ~PGMASK; // 
               uint32_t mem_page = phdr.p_vaddr & ~PGMASK;
               uint32_t page_offset = phdr.p_vaddr & PGMASK;
               uint32_t read_bytes, zero_bytes;
@@ -534,6 +533,7 @@ static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
 {
+  printf("f: %s rb: %d off: %d zb: %d \n", file->file_name_);
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
@@ -550,10 +550,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Get a page of memory. */
       // ---------------------------------------------------------------
       // uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
-
-
-      
-      // Ali: Is this congruent with our goal to only load the original stack frame?
       uint8_t *kpage = get_user_page();
 
       if(DEBUG)
