@@ -4,20 +4,23 @@
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 
-
-#define DEBUG 0
+#define DEBUG 1
 
 struct hash* get_curr_hash(){
-	return &(thread_current()->SP_table->hash_table);
+	return &(thread_current()->SP_table.hash_table);
 }
 
 //Ali: added this function
 struct SPT_entry* create_SPT_entry(void* vaddr, bool resident_bit, 
 		 off_t ofs, bool writable){ // might want to pass init values here
+	/*if(DEBUG)
+		printf("CREATE_SPT_ENTRY: malloc'ing\n");*/
 	struct SPT_entry* temp = (struct SPT_entry*) malloc(sizeof(struct SPT_entry));
 	// initialize entry values
 	temp->is_stack_page = false;
 	temp->vaddr = vaddr;
+	/*if(DEBUG)
+		printf("CREATE_SPT_ENTRY: getting page number from vaddr\n");*/
 	temp->page_number = vaddr_to_page_num(vaddr);
 	temp->resident_bit = resident_bit;
 	temp->ofs = ofs;
@@ -25,7 +28,11 @@ struct SPT_entry* create_SPT_entry(void* vaddr, bool resident_bit,
 	// add temp to the hash using hash list
 	// temp->status_map = bitmap_create(status_count); // make bitmap
 	// do any modifications to bitmap?
+	if(DEBUG)
+		printf("inserting into hash %x with elem %x \n", get_curr_hash(), &temp->hash_elem);
 	hash_insert(get_curr_hash(), &temp->hash_elem);
+	if(DEBUG)
+		printf("inserted!\n");
 	return temp;
 }
 // clean up SPT entry on remove from hash
@@ -35,15 +42,14 @@ void remove_SPT_entry(struct SPT_entry* spte){
 }
 
 // initialize hash 
-struct SPT* init_SPT(void){
+void init_SPT(struct thread* t){
 	if(DEBUG)
 		printf("initializing SPT\n");
-	struct SPT* temp = (struct SPT*) malloc(sizeof(struct SPT));
-	hash_init(&(temp->hash_table), hasher, page_less, NULL);
-	temp->stack_pointer = NULL;
-	return temp;
+	struct SPT temp = t->SP_table;
+	//hash_init(&(temp.hash_table), hasher, page_less, NULL);
+	temp.stack_pointer = NULL;
+	//return temp;
 }
-
 
 // hash func
 unsigned int hasher(const struct hash_elem *p_, void *aux UNUSED){
@@ -65,7 +71,7 @@ bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,
 	const struct SPT_entry *b = hash_entry (b_, struct SPT_entry, hash_elem);
 	if(DEBUG) {
 		printf("comparing pages a=%d, b=%d!\n", a->page_number, b->page_number);
-		ASSERT(a->page_number != b->page_number);
+		//ASSERT(a->page_number != b->page_number);
 	}
  	return a->page_number < b->page_number;
 }

@@ -20,7 +20,7 @@
 //------------------------------------------------
 #include "vm/page.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -119,11 +119,20 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+  if(DEBUG)
+    printf("initializing hash...");
+  hash_init(&(thread_current()->SP_table.hash_table), hasher, page_less, NULL);
+  if(DEBUG)
+    printf("... hash initialized\n");
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
   struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
+
+  if(DEBUG)
+    printf("START PROCESS success status %d\n", success);
+
   if(!success)
     child_struct_ptr->exit_status = SYSCALL_ERROR;
   
@@ -150,6 +159,9 @@ start_process (void *file_name_)
   {
     printf("...  successfully loaded\n");
   }
+
+  if(DEBUG)
+    printf("\n\n%s hash initialized\n\n", thread_current()->name);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -330,6 +342,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
+  if(DEBUG)
+    printf("LOAD: loading\n");
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -343,9 +357,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
+  if(DEBUG){
+    printf("%s: process activated\n", t->name);
+  }
+
   /* Open executable file. */
   file = filesys_open (file_name);
-  thread_current()->executable = file;
+  t->executable = file;
+  if(DEBUG)
+    printf("\nFILE PTR %x\n", file);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -372,6 +392,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
 
+  if(DEBUG)
+    printf("LOAD: starting to run for loop!\n");
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
   for (i = 0; i < ehdr.e_phnum; i++) 
@@ -421,10 +443,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
-
+              if(DEBUG)
+                printf("for iteration %d ... ", i);
               if (!load_segment (file, file_page, (void *) mem_page,
-                                 read_bytes, zero_bytes, writable))
+                                 read_bytes, zero_bytes, writable)){
+                if(DEBUG)
+                  printf("LOAD for loop: failure of load_segment\n");
                 goto done;
+              }
+              if(DEBUG)
+                printf("--- ... iteration complete!\n");
             }
           else
             goto done;
@@ -538,7 +566,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
 
-  file_seek (file, ofs);
+  //file_seek (file, ofs); // probably not necessary
+  if(DEBUG)
+    printf("\n\nLOAD_SEGMENT: while loop starting with file %x\n", file);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
       /* Calculate how to fill this page.
@@ -548,8 +578,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
       // -----------------------------------------------------------------------
+      if(DEBUG)
+        printf("creating SPT_entry with upg: %x - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
       struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, writable);
-      ofs += PGSIZE;
+      if(DEBUG)
+        printf("  ... done!\n");
       // -----------------------------------------------------------------------
 
       // /* Get a page of memory. */
@@ -576,6 +609,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
+      ofs += PGSIZE;
     }
   return true;
 }

@@ -145,6 +145,8 @@ page_fault (struct intr_frame *f)
      [IA32-v3a] 5.15 "Interrupt 14--Page Fault Exception
      (#PF)". */
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
+  if(DEBUG)
+    printf("PAGE FAULT: fault addr: %x\n", fault_addr);
 
   /* Turn interrupts back on (they were only off so that we could
      be assured of reading CR2 before it changed). */
@@ -197,6 +199,7 @@ page_fault (struct intr_frame *f)
   struct SPT_entry* result = get_SPT_entry(page_start);
 
   if(DEBUG){
+    printf("original fault address: %x\n", fault_addr);
     printf("thread %s fault address %x rounded to %x \n", thread_current()->name, fault_addr, page_start);
   }
 
@@ -216,21 +219,22 @@ page_fault (struct intr_frame *f)
     /* Load this page. */
     uint32_t read_bytes = 0;
     read_bytes = file_read (t->executable, kpage, PGSIZE);
-    if(read_bytes)
+    //if(read_bytes)
       memset (kpage + read_bytes, 0, PGSIZE-read_bytes);
 
     /* Add the page to the process's address space. */
     if (!install_page (page_start, kpage, result->writable)) 
      {
        palloc_free_page (kpage);
-       return false; 
+       printf("ERROR IN INSTALL PAGE\n");
+       //return false; 
      }
   } 
 
 
   // --------------------------------------------------
 
-
+  printf("Page_start: %x\n", page_start);
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
@@ -239,6 +243,6 @@ page_fault (struct intr_frame *f)
 
   //printf("There is like totally a lot of crying in Pintos!\n");
   //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
-  kill (f);
+  //kill (f);
 }
 

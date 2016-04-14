@@ -1,7 +1,9 @@
+#ifndef VM_PAGE_H
+#define VM_PAGE_H
+
 //Supplemental Page Table
 #include "lib/kernel/bitmap.h"
 #include "lib/kernel/hash.h"
-#include "threads/thread.h"
 #include "threads/synch.h"
 #include "vm/frame.h"
 #include "threads/vaddr.h"
@@ -24,9 +26,11 @@ static const int max_page = (((int)PHYS_BASE) / PGSIZE) - 1; //Ali: Don't think 
 
 struct SPT{
 	struct hash hash_table;
-	void* stack_pointer;
+	void* stack_pointer; //MOVE TO THREAD STRUCT
 };
-
+// ------------------------------
+#include "threads/thread.h"
+// ------------------------------
 struct SPT_entry{
 	//struct bitmap *status_map;
 	bool is_stack_page;
@@ -46,7 +50,7 @@ struct SPT_entry{
 struct SPT_entry* create_SPT_entry(void* vaddr, bool resident_bit, 
 		off_t ofs, bool writable);
 void remove_SPT_entry(struct SPT_entry* spte);
-struct SPT* init_SPT(void);
+void init_SPT(struct thread* t);
 
 
 // hash func
@@ -62,3 +66,4 @@ void* page_num_to_vaddr(uint32_t page_number);
 
 // check get_SPT_entry?
 // how to get VA of stack_pointer? is top of VA = PHYS_BASE - PGSIZE
+#endif /* vm/page.h */

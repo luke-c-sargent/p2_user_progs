@@ -6,6 +6,8 @@
 #include <stdint.h>
 //----------------------------------------
 #include "threads/synch.h"
+#include "vm/page.h"
+#include "vm/frame.h"
 //----------------------------------------
 
 /* States in a thread's life cycle. */
@@ -115,7 +117,9 @@ struct thread
     struct list_elem* child_list_elem;
 
     //vm additions
-    struct SPT* SP_table;
+    //struct hash SP_table;
+    struct SPT SP_table;
+    void* stack_pointer;
     //------------------------------------------------------------
 
     /* Owned by thread.c. */
