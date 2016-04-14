@@ -145,8 +145,6 @@ page_fault (struct intr_frame *f)
      [IA32-v3a] 5.15 "Interrupt 14--Page Fault Exception
      (#PF)". */
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
-  if(DEBUG)
-    printf("PAGE FAULT: fault addr: %x\n", fault_addr);
 
   /* Turn interrupts back on (they were only off so that we could
      be assured of reading CR2 before it changed). */
@@ -155,9 +153,14 @@ page_fault (struct intr_frame *f)
   //=========================================
   if (fault_addr == NULL)
   {
+    if(DEBUG)
+      printf("PAGE FAULT: fault address was NULL\n");
     exit(SYSCALL_ERROR);
   }
   //=========================================
+
+  if(DEBUG)
+    printf("PAGE FAULT: fault addr: %p\n", fault_addr);
 
   /* Count page faults. */
   page_fault_cnt++;
@@ -196,46 +199,53 @@ page_fault (struct intr_frame *f)
   
   void* page_start = pg_round_down (fault_addr);
 
-  struct SPT_entry* result = get_SPT_entry(page_start);
+  struct SPT_entry* spte = get_SPT_entry(page_start);
 
-  if(DEBUG){
-    printf("original fault address: %x\n", fault_addr);
-    printf("thread %s fault address %x rounded to %x \n", thread_current()->name, fault_addr, page_start);
-  }
+  if(spte){
+    if(DEBUG && is_user_vaddr(fault_addr)){
+      printf("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, spte->page_read_bytes, spte->page_zero_bytes, spte->writable);
+    }
+    if(DEBUG){
+      printf("\tthread %s fault address %p rounded to %p \n\n", thread_current()->name, fault_addr, page_start);
+    }
 
-  if(result){
-    file_seek (t->executable, result->ofs);
+    file_seek (t->executable, spte->ofs);
     /* Get a page of memory. */
     uint8_t *kpage = get_user_page();
 
     if (kpage == NULL){
       printf("KPAGE ALLOCATION FAIL\n"); // eviction
-    } else {
-      if(DEBUG)
-        printf("SPT fetch error\n");
     }
 
 
     /* Load this page. */
-    uint32_t read_bytes = 0;
-    read_bytes = file_read (t->executable, kpage, PGSIZE);
-    //if(read_bytes)
-      memset (kpage + read_bytes, 0, PGSIZE-read_bytes);
+    if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
+        {
+          if(DEBUG){printf("\tfile read FAILURE :C :C :C :C\n");}
+          palloc_free_page (kpage);
+          return false; 
+        }
+      memset (kpage + spte->page_read_bytes, 0, spte->page_zero_bytes);
 
     /* Add the page to the process's address space. */
-    if (!install_page (page_start, kpage, result->writable)) 
+    if (!install_page (page_start, kpage, spte->writable)) 
      {
        palloc_free_page (kpage);
        printf("ERROR IN INSTALL PAGE\n");
        //return false; 
      }
-  } 
+  } else {
+    if(DEBUG)
+      printf("PAGE FAULT: could not find SPT entry\n");
+    kill(f); // wat
+  }
 
 
   // --------------------------------------------------
+  if(DEBUG)
+    printf("\tPage_start: %p\n", page_start);
 
-  printf("Page_start: %x\n", page_start);
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
+  printf ("Page fault at %p: %s error %s page in %s context.\n\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
@@ -245,4 +255,3 @@ page_fault (struct intr_frame *f)
   //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
   //kill (f);
 }
-

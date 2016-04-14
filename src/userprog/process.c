@@ -119,11 +119,15 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+
   if(DEBUG)
     printf("initializing hash...");
+
   hash_init(&(thread_current()->SP_table.hash_table), hasher, page_less, NULL);
+  
   if(DEBUG)
     printf("... hash initialized\n");
+  
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
@@ -365,7 +369,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   t->executable = file;
   if(DEBUG)
-    printf("\nFILE PTR %x\n", file);
+    printf("\nFILE PTR %p\n", file);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -568,7 +572,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
   //file_seek (file, ofs); // probably not necessary
   if(DEBUG)
-    printf("\n\nLOAD_SEGMENT: while loop starting with file %x\n", file);
+    printf("\n\nLOAD_SEGMENT: while loop starting with file %p\n", file);
+
   while (read_bytes > 0 || zero_bytes > 0) 
     {
       /* Calculate how to fill this page.
@@ -579,8 +584,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       
       // -----------------------------------------------------------------------
       if(DEBUG)
-        printf("creating SPT_entry with upg: %x - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
-      struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, writable);
+        printf("creating SPT_entry with upg: %p - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
+      struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, page_read_bytes, page_zero_bytes, writable);
+
+      ASSERT(get_SPT_entry(upage));
+      
       if(DEBUG)
         printf("  ... done!\n");
       // -----------------------------------------------------------------------
@@ -627,7 +635,7 @@ setup_stack (void **esp, char * arg_array) // modified signature
   kpage = get_user_page(); // this is the stack page
     //insert this into the SPT NEED TO ADD SYNCH
   struct SPT_entry* stack_spte = create_SPT_entry((uint8_t *) PHYS_BASE - PGSIZE,
-      true, NULL, true);
+      true, NULL, NULL, NULL, true);
   stack_spte->is_stack_page = true;
   //-----------------------------------------------------------------
   if (kpage != NULL) 

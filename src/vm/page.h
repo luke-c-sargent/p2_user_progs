@@ -34,10 +34,12 @@ struct SPT{
 struct SPT_entry{
 	//struct bitmap *status_map;
 	bool is_stack_page;
-	void * vaddr;	//Ali: uint8_t????
+	void * vaddr;
 	uint32_t page_number;
 	bool resident_bit;
 	off_t ofs;
+	size_t page_read_bytes;
+	size_t page_zero_bytes;
 	bool writable;
 	struct hash_elem hash_elem;
 };
@@ -48,7 +50,7 @@ struct SPT_entry{
 // function declaration
 //Ali
 struct SPT_entry* create_SPT_entry(void* vaddr, bool resident_bit, 
-		off_t ofs, bool writable);
+		off_t ofs, size_t page_read_bytes, size_t page_zero_bytes, bool writable);
 void remove_SPT_entry(struct SPT_entry* spte);
 void init_SPT(struct thread* t);
 
