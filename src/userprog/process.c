@@ -539,23 +539,29 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   file_seek (file, ofs);
-  while (read_bytes > 0 || zero_bytes > 0) 
-    {
+  //while (read_bytes > 0 || zero_bytes > 0) 
+  //  {
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
          and zero the final PAGE_ZERO_BYTES bytes. */
-      size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
-      size_t page_zero_bytes = PGSIZE - page_read_bytes;
+      //size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
+      //size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Get a page of memory. */
       // ---------------------------------------------------------------
       // uint8_t *kpage = palloc_get_page (PAL_USER); OLD LOGIC
       uint8_t *kpage = get_user_page();
+      
+      
 
       if(DEBUG)
         printf("load_segment: current frame is %s\n", thread_current()->name);
       // tid, stackptr, frame number
+
       int frame_number = frameptr_to_frame_num(kpage);
+      struct SPT_entry* stack_spte = create_SPT_entry(thread_current()->tid, frame_number, kpage);
+
+
       if(DEBUG)
         printf("passing to SPT: tid %d, frame no. %d, stackptr %x\n", thread_current()->tid, frame_number, kpage);
 
@@ -579,9 +585,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if (kpage == NULL)
         return false;
 
-      // Ali: Start
+      size_t page_read_bytes = file_read (file, kpage, read_bytes);
+      size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Load this page. */
+      /*
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
           palloc_free_page (kpage); // must change this
@@ -589,6 +597,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
             printf("LOAD_SEGMENT: bad file read\n");
           return false; 
         }
+        */
       // ---------------------------------------------
       /* Ali:
          This memset should instead be done when a page fault occurs
@@ -604,7 +613,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
          passed to load_segment within the same STE 
       */
       // ---------------------------------------------
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
+      if(page_zero_bytes)
+        memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
       /* Add the page to the process's address space. */
       if (!install_page (upage, kpage, writable)) 
@@ -613,13 +623,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           return false; 
         }
 
-      // Ali: End
 
-      /* Advance. */
-      read_bytes -= page_read_bytes;
-      zero_bytes -= page_zero_bytes;
-      upage += PGSIZE;
-    }
+      // /* Advance. */
+      // read_bytes -= page_read_bytes;
+      // zero_bytes -= page_zero_bytes;
+      // upage += PGSIZE;
+    // }
   if(DEBUG)
     printf("load_segment completed with status true\n");
   return true;
