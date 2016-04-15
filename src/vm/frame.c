@@ -4,7 +4,7 @@
 #include "threads/vaddr.h"
 
 static int max_frame;
-static int bump_ptr;
+static uint32_t bump_ptr;
 
 struct FrameTableEntry* alloc_frame_table(void){
 	int count = 1;
@@ -37,7 +37,7 @@ void init_frame_table(void){
 	frame_table = alloc_frame_table();
 }
 
-uint8_t * get_user_page(void){	//Ali: UPDATE PTE
+uint8_t* get_user_page(void){	//Ali: UPDATE PTE
 	int total = 0;
 	while (frame_table[bump_ptr].status == FT_FULL){
 		++bump_ptr;
@@ -50,6 +50,25 @@ uint8_t * get_user_page(void){	//Ali: UPDATE PTE
 		}
 	}
 	frame_table[bump_ptr].status = FT_FULL;
+	return frame_table[bump_ptr].frame_ptr;
+}
+
+uint8_t* evict_page(void){
+	
+	while(frame_table[bump_ptr].pte != NULL && (*frame_table[bump_ptr].pte & PTE_A) != 0) {
+		*frame_table[bump_ptr].pte |= PTE_A;
+		++bump_ptr;
+		if(bump_ptr == max_frame)
+			bump_ptr = 0;
+	}
+	frame_table[bump_ptr].status = FT_EMPTY;
+
+	//need to update SPT
+
+	
+	//need to put in swap
+
+	// need to evict frame_table[bump_ptr]
 	return frame_table[bump_ptr].frame_ptr;
 }
 

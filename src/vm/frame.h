@@ -24,7 +24,7 @@ struct semaphore paging_sema;
 struct FrameTableEntry* alloc_frame_table(void);
 void init_frame_table(void);
 uint8_t * get_user_page(void);	//Ali: uint32_t
-
+uint8_t* evict_page(void);
 uint32_t frameptr_to_frame_num(void* addr);
 void* frame_num_to_frameptr(uint32_t frame_num);
 #endif /* vm/frame.h */

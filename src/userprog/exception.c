@@ -234,6 +234,7 @@ page_fault (struct intr_frame *f)
        printf("ERROR IN INSTALL PAGE\n");
        //return false; 
      }
+    stpe->resident_bit = true;
   } else {
     if(DEBUG)
       printf("PAGE FAULT: could not find SPT entry\n");
