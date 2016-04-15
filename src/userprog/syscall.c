@@ -176,13 +176,14 @@ syscall_handler (struct intr_frame *f UNUSED)
 
       char * buffer = *(char**)(f->esp+8);
        //check if buffer address is valid
-      if (buffer == NULL || !is_user_vaddr (buffer) || !is_paged (buffer))
+      // Ali: is_page was bad
+      if (buffer == NULL || !is_user_vaddr (buffer) /* || !is_paged (buffer) */)
       {
           if (DEBUG)
-              printf ("buffer is bad\n");
+              printf ("buffer is bad.\n");
           f->eax = SYSCALL_ERROR;
           exit (SYSCALL_ERROR);
-      }
+      } 
      
       f->eax = read (*(int*)(f->esp+4), buffer, *(unsigned*)(f->esp+12));
       break;

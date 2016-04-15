@@ -20,7 +20,7 @@
 //------------------------------------------------
 #include "vm/page.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define UNUSED_CHILD_EXIT_STATUS -666
 #define SYSCALL_ERROR -1
 //------------------------------------------------
@@ -587,8 +587,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         printf("creating SPT_entry with upg: %p - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
       struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, page_read_bytes, page_zero_bytes, writable);
 
-      ASSERT(get_SPT_entry(upage));
-      
+      // printf("upage 1: %p\n", upage);
+      //ASSERT(get_SPT_entry(upage));
+      // printf("upage 2: %p\n", upage);
       if(DEBUG)
         printf("  ... done!\n");
       // -----------------------------------------------------------------------

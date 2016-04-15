@@ -9,6 +9,7 @@
 #include "threads/vaddr.h"
 #include "filesys/off_t.h"
 
+/*
 enum SPT_status {
 	SPT_RESIDENT=0,
 	// SPT_USED,
@@ -18,11 +19,11 @@ enum SPT_status {
 	// IN SWAP?
 	LAST_ELEMENT_UNUSED
 };
-
+*/
 
 // correlates to size of SPT_status and its complementary bitmap entries
-static const int status_count = LAST_ELEMENT_UNUSED - SPT_RESIDENT;
-static const int max_page = (((int)PHYS_BASE) / PGSIZE) - 1; //Ali: Don't think these are the same type
+// static const int status_count = LAST_ELEMENT_UNUSED - SPT_RESIDENT;
+static const uint32_t max_page = ((uint32_t) PHYS_BASE / ((uint32_t) PGSIZE));
 
 struct SPT{
 	struct hash hash_table;

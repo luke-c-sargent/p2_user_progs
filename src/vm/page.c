@@ -4,7 +4,7 @@
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define SUPERDEBUG 0
 
 struct hash* get_curr_hash(){
@@ -82,22 +82,27 @@ bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,
 
 struct SPT_entry* get_SPT_entry(void* vaddr){	//Ali: change to hash find
 	uint32_t page_number = vaddr_to_page_num(vaddr);
-	struct SPT_entry* spte;
-	spte->page_number = page_number;
-	struct hash_elem* e = hash_find (get_curr_hash(), &spte->hash_elem);
+	struct SPT_entry spte;
+	spte.page_number = page_number;
+	struct hash_elem* e = hash_find (get_curr_hash(), &spte.hash_elem);
 	return e != NULL ? hash_entry (e, struct SPT_entry, hash_elem) : NULL;
 }
 
 
 uint32_t vaddr_to_page_num(void* addr){
-	ASSERT(is_user_vaddr(addr));
+	if(!is_user_vaddr(addr))
+		exit(-1);
 	uint32_t page_number = ((uint32_t) addr) >> PGBITS;
-	ASSERT(page_number <= max_page);
+	ASSERT(page_number < max_page);
+	if(DEBUG)
+		printf("max_page = %u\n", max_page);
 	return page_number;
 }
 void* page_num_to_vaddr(uint32_t page_number){
-	ASSERT(page_number <= max_page);
+	ASSERT(page_number < max_page);
 	void* vaddr = (void*)(PGSIZE*page_number);
 	ASSERT(is_user_vaddr(vaddr));
+	if(DEBUG)
+		printf("max_page = %u\n", max_page);
 	return vaddr;
 }

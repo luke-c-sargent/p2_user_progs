@@ -11,7 +11,7 @@
 #include "userprog/process.h"
 
 #define SYSCALL_ERROR -1
-#define DEBUG 1
+#define DEBUG 0
 //--------------------
 
 /* Number of page faults processed. */
@@ -237,7 +237,7 @@ page_fault (struct intr_frame *f)
   } else {
     if(DEBUG)
       printf("PAGE FAULT: could not find SPT entry\n");
-    kill(f); // wat
+    exit(-1); // wat
   }
 
 
@@ -245,11 +245,11 @@ page_fault (struct intr_frame *f)
   if(DEBUG)
     printf("\tPage_start: %p\n", page_start);
 
-  printf ("Page fault at %p: %s error %s page in %s context.\n\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
+  // printf ("Page fault at %p: %s error %s page in %s context.\n\n",
+  //         fault_addr,
+  //         not_present ? "not present" : "rights violation",
+  //         write ? "writing" : "reading",
+  //         user ? "user" : "kernel");
 
   //printf("There is like totally a lot of crying in Pintos!\n");
   //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
