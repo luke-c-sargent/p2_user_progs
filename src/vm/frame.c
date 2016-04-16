@@ -2,9 +2,14 @@
 #include "vm/frame.h"
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
+#include "threads/thread.h"
+
+#define DEBUG 1
 
 static int max_frame;
 static uint32_t bump_ptr;
+
+
 
 struct FrameTableEntry* alloc_frame_table(void){
 	int count = 1;
@@ -37,7 +42,7 @@ void init_frame_table(void){
 	frame_table = alloc_frame_table();
 }
 
-uint8_t* get_user_page(void){	//Ali: UPDATE PTE
+uint8_t* get_user_page(void * vaddr){	//Ali: UPDATE PTE
 	int total = 0;
 	while (frame_table[bump_ptr].status == FT_FULL){
 		++bump_ptr;
@@ -50,17 +55,30 @@ uint8_t* get_user_page(void){	//Ali: UPDATE PTE
 		}
 	}
 	frame_table[bump_ptr].status = FT_FULL;
+	frame_table[bump_ptr].vaddr = vaddr;
 	return frame_table[bump_ptr].frame_ptr;
 }
 
 uint8_t* evict_page(void){
 	
+	struct thread* t = thread_current();
+	if(DEBUG)
+		printf("thread_current() name: %s\n", t->name);
+
+	while(pagedir_is_accessed (t->pagedir, frame_table[bump_ptr].vaddr)) {
+		pagedir_set_accessed (t->pagedir, frame_table[bump_ptr].vaddr, false);
+		++bump_ptr;
+
+	}
+
+	/*
 	while(frame_table[bump_ptr].pte != NULL && (*frame_table[bump_ptr].pte & PTE_A) != 0) {
 		*frame_table[bump_ptr].pte |= PTE_A;
 		++bump_ptr;
 		if(bump_ptr == max_frame)
 			bump_ptr = 0;
 	}
+	*/
 	frame_table[bump_ptr].status = FT_EMPTY;
 
 	//need to update SPT
@@ -69,6 +87,8 @@ uint8_t* evict_page(void){
 	//need to put in swap
 
 	// need to evict frame_table[bump_ptr]
+	pagedir_clear_page (t->pagedir, frame_table[bump_ptr].vaddr);
+
 	return frame_table[bump_ptr].frame_ptr;
 }
 

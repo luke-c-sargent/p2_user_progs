@@ -27,7 +27,7 @@ static const uint32_t max_page = ((uint32_t) PHYS_BASE / ((uint32_t) PGSIZE));
 
 struct SPT{
 	struct hash hash_table;
-	void* stack_pointer; //MOVE TO THREAD STRUCT
+	//void* stack_pointer; //MOVE TO THREAD STRUCT
 };
 // ------------------------------
 #include "threads/thread.h"

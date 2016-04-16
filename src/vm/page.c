@@ -51,7 +51,7 @@ void init_SPT(struct thread* t){
 		printf("initializing SPT\n");
 	struct SPT temp = t->SP_table;
 	//hash_init(&(temp.hash_table), hasher, page_less, NULL);
-	temp.stack_pointer = NULL;
+	//temp.stack_pointer = NULL;
 	//return temp;
 }
 

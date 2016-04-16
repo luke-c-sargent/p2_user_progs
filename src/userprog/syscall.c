@@ -33,6 +33,14 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  // ----------------------------------------------------
+  thread_current()->esp = f->esp;
+  /*if(){
+    f->
+  }*/
+
+  // ----------------------------------------------------
+
   // switch statement differentiates between system calls
   /*
   if (DEBUG)
@@ -639,6 +647,12 @@ void arg_error_check (void* _esp, int arg_width)
       printf ("memory error! arg_width will leave user space\n");
     exit (SYSCALL_ERROR);
   }
+  //thread_current()->esp = _esp;
+  /*
+  //if (page lookup(vaddr) == NULL && esp - 32 > addr)
+  {
+    //exit
+  }*/
 }
 // is_paged:
 // what it does: checks if a memory address is currently paged

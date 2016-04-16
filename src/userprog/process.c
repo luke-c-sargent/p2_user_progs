@@ -633,7 +633,7 @@ setup_stack (void **esp, char * arg_array) // modified signature
 
   //kpage = palloc_get_page (PAL_USER | PAL_ZERO); OLD
   //-----------------------------------------------------------------
-  kpage = get_user_page(); // this is the stack page
+  kpage = get_user_page((uint8_t *) PHYS_BASE - PGSIZE); // this is the stack page
     //insert this into the SPT NEED TO ADD SYNCH
   struct SPT_entry* stack_spte = create_SPT_entry((uint8_t *) PHYS_BASE - PGSIZE,
       true, NULL, NULL, NULL, true);

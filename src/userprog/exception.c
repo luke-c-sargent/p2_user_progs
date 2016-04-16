@@ -98,7 +98,7 @@ kill (struct intr_frame *f)
       printf ("%s: dying due to interrupt %#04x (%s).\n",
               thread_name (), f->vec_no, intr_name (f->vec_no));
       intr_dump_frame (f);
-      exit(-1);
+      exit(SYSCALL_ERROR);
       //thread_exit (); 
 
     case SEL_KCSEG:
@@ -159,9 +159,6 @@ page_fault (struct intr_frame *f)
   }
   //=========================================
 
-  if(DEBUG)
-    printf("PAGE FAULT: fault addr: %p\n", fault_addr);
-
   /* Count page faults. */
   page_fault_cnt++;
 
@@ -191,15 +188,22 @@ page_fault (struct intr_frame *f)
   */
 
   struct thread* t = thread_current();
+  if(DEBUG) {
+    printf("thread esp: %p\nstack_pointer:%p \nf->esp:%p\n", t->esp, t->stack_pointer, f->esp);
+    printf("PAGE FAULT: fault addr: %p\n", fault_addr);
+  }
+
+  void* page_start = pg_round_down (fault_addr);
+  struct SPT_entry* spte = get_SPT_entry(page_start);
+
 
   //void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
 
   //if(DEBUG && paddr == NULL)
     //printf("Page Fault: VA is not mapped\n");
   
-  void* page_start = pg_round_down (fault_addr);
 
-  struct SPT_entry* spte = get_SPT_entry(page_start);
+  
 
   if(spte){
     if(DEBUG && is_user_vaddr(fault_addr)){
@@ -211,7 +215,7 @@ page_fault (struct intr_frame *f)
 
     file_seek (t->executable, spte->ofs);
     /* Get a page of memory. */
-    uint8_t *kpage = get_user_page();
+    uint8_t *kpage = get_user_page(page_start);
 
     if (kpage == NULL){
       printf("KPAGE ALLOCATION FAIL\n"); // eviction
@@ -230,15 +234,32 @@ page_fault (struct intr_frame *f)
     /* Add the page to the process's address space. */
     if (!install_page (page_start, kpage, spte->writable)) 
      {
-       palloc_free_page (kpage);
+       palloc_free_page (kpage); // dis aint good
        printf("ERROR IN INSTALL PAGE\n");
        //return false; 
      }
-    stpe->resident_bit = true;
-  } else {
+    spte->resident_bit = true;
+  } else { // NULL
     if(DEBUG)
       printf("PAGE FAULT: could not find SPT entry\n");
-    exit(-1); // wat
+      // stack growth logic --------------------------------------------
+    //void * limit = PHYS_BASE - PGSIZE - 0x20;
+    if(DEBUG)
+      printf("subtracting %p and %p = %p \n", f->esp, fault_addr, f->esp - fault_addr);
+    if(((uint32_t) f->esp - (uint32_t) fault_addr)<=32 || t->esp > f->esp){
+      if(DEBUG)
+        printf("trying to grow stack\n");
+      // get a page, add a SPT entry, install page
+
+      spte = create_SPT_entry(page_start, true, NULL, NULL, NULL, true);
+      uint8_t *kpage = get_user_page(page_start);
+      if (!install_page (page_start, kpage, spte->writable))
+        printf("install page is borked\n");
+    }else{
+      exit(SYSCALL_ERROR);
+    }
+  //------------------------------------------------------------
+    
   }
 
 

@@ -119,7 +119,8 @@ struct thread
     //vm additions
     //struct hash SP_table;
     struct SPT SP_table;
-    void* stack_pointer;
+    void* stack_pointer;    //Holds the pointer to the base of the stack
+    void* esp;              //Stack pointer register, which is set on interrupt
     //------------------------------------------------------------
 
     /* Owned by thread.c. */
