@@ -4,7 +4,7 @@
 #include "threads/vaddr.h"
 #include "threads/thread.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 static int max_frame;
 static uint32_t bump_ptr;

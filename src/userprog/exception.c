@@ -12,11 +12,12 @@
 
 #define SYSCALL_ERROR -1
 #define DEBUG 0
+
 //--------------------
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
-
+uint32_t max_stack = 1024*1024*8; //8MBs
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
 
@@ -208,8 +209,6 @@ page_fault (struct intr_frame *f)
   if(spte){
     if(DEBUG && is_user_vaddr(fault_addr)){
       printf("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, spte->page_read_bytes, spte->page_zero_bytes, spte->writable);
-    }
-    if(DEBUG){
       printf("\tthread %s fault address %p rounded to %p \n\n", thread_current()->name, fault_addr, page_start);
     }
 
@@ -236,6 +235,7 @@ page_fault (struct intr_frame *f)
      {
        palloc_free_page (kpage); // dis aint good
        printf("ERROR IN INSTALL PAGE\n");
+       exit(SYSCALL_ERROR);
        //return false; 
      }
     spte->resident_bit = true;
@@ -244,9 +244,13 @@ page_fault (struct intr_frame *f)
       printf("PAGE FAULT: could not find SPT entry\n");
       // stack growth logic --------------------------------------------
     //void * limit = PHYS_BASE - PGSIZE - 0x20;
-    if(DEBUG)
+    void* stack_boundary = PHYS_BASE -max_stack;
+    if(DEBUG) {
       printf("subtracting %p and %p = %p \n", f->esp, fault_addr, f->esp - fault_addr);
-    if(((uint32_t) f->esp - (uint32_t) fault_addr)<=32 || t->esp > f->esp){
+      printf("subtracting %p and %p = %p \n", t->esp, fault_addr, t->esp - fault_addr);
+      printf("stack_boundary: %p\n", stack_boundary);
+    }
+    if(((uint32_t) f->esp - (uint32_t) fault_addr)<=32  || t->esp >= stack_boundary){
       if(DEBUG)
         printf("trying to grow stack\n");
       // get a page, add a SPT entry, install page
@@ -255,13 +259,18 @@ page_fault (struct intr_frame *f)
       uint8_t *kpage = get_user_page(page_start);
       if (!install_page (page_start, kpage, spte->writable))
         printf("install page is borked\n");
-    }else{
+    }/* else if (( (uint32_t) t->esp - (uint32_t) 2)<=32) {
+      if(DEBUG)
+        printf("kernel to kernel BIIIIIIIIIITCH\n");
+    } */ else{
+      if(DEBUG)
+        printf("ffaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaack\n");
       exit(SYSCALL_ERROR);
     }
   //------------------------------------------------------------
     
   }
-
+  //t->esp = NULL;
 
   // --------------------------------------------------
   if(DEBUG)

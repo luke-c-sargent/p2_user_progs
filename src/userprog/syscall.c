@@ -11,6 +11,7 @@
 #include "threads/palloc.h"
 
 #define SYSCALL_ERROR -1
+#define DEBUG 0
 
 struct filesys_sema;
 
@@ -22,7 +23,7 @@ bool is_user_and_mapped (void* addr);
 //-----------------------------------------------
 static void syscall_handler (struct intr_frame *);
 
-#define DEBUG 0
+
 
 void
 syscall_init (void) 
@@ -34,7 +35,7 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   // ----------------------------------------------------
-  thread_current()->esp = f->esp;
+  
   /*if(){
     f->
   }*/
@@ -70,7 +71,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   else if (!is_paged (f->esp))
   {
       if (DEBUG)
-        printf ("ptr not to paged memory\n");
+        printf ("****************************ptr not to paged memory\n");
     valid_memory = 0;
   }
 
@@ -78,10 +79,14 @@ syscall_handler (struct intr_frame *f UNUSED)
     f->eax = SYSCALL_ERROR;
     exit (SYSCALL_ERROR);
   }
+  if(DEBUG)
+    printf("t->esp: %p\n", f->esp);
+  
+  thread_current()->esp = f->esp;
 
   int syscall_id = *(int*)(f->esp);
   
-  // 
+  //  
   switch (syscall_id)
   {
     case SYS_HALT:
@@ -243,7 +248,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       if (DEBUG)
         printf ("ERROR: uncaught exception");
   } // end switch
-
+  thread_current()->esp = NULL;
   if (DEBUG)
     printf ("syscall thread exit...\n");
 }
@@ -536,18 +541,27 @@ int read (int fd, void *buffer, unsigned length)
     }
     return length;
   }
+  if(DEBUG)
+    printf("After file descriptor check\n");
   // otherwise read from file system
   sema_down (&filesys_sema);
   struct file* file_ptr = fd_to_file_ptr (fd);
+  if (DEBUG)
+    printf("After the file pointer retrieval\n");
   if (file_ptr == NULL)
   {
     sema_up (&filesys_sema);
     return SYSCALL_ERROR;
   }
+  if(DEBUG)
+    printf("reading file\n");
   // everything is validated, read the file
   int size = file_read (file_ptr, buffer, length);
+  if(DEBUG)
+    printf("read file\n");
   sema_up (&filesys_sema);
-
+  if(DEBUG)
+    printf("Finished read\n");
   return size;
 }
 // write:
@@ -660,6 +674,7 @@ void arg_error_check (void* _esp, int arg_width)
 // returns: result of check-- is it in page directory?
 bool is_paged (void* addr)
 {
+  //if(DEBUG) printf("IN IS_PAGED!! %s\n", thread_current()->name);
   return !(pagedir_get_page (thread_current ()->pagedir,addr) == NULL);
 }
 // get_file_descriptor:
