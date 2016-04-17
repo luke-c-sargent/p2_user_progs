@@ -243,7 +243,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       if (DEBUG)
         printf ("ERROR: uncaught exception");
   } // end switch
-
+  thread_current()->esp = NULL;
   if (DEBUG)
     printf ("syscall thread exit...\n");
 }

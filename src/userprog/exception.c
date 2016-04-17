@@ -5,10 +5,12 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 //--------------
+#include <stdlib.h>
 #include "userprog/syscall.h"
 #include "threads/vaddr.h"
 #include "vm/page.h"
 #include "userprog/process.h"
+#include "filesys/file.h"
 
 #define SYSCALL_ERROR -1
 #define DEBUG 0
@@ -167,26 +169,6 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
-
-  // --------------------------------------------------
-
-  /* Ali: what to do
-    1) Find the STE associated to fault_addr
-
-    2) access the file and load PGSIZE of data starting from page start
-
-    3) Memset a page of the stack page, but only a page. Then the
-    next time we page fault, memset another page of the stack,
-    and so on. This is what growing the stack is and it requires
-    keeping track of our position in the loading file as we increment
-    that pointer by PGSIZE
-
-    4) Update necessary parts of memory???
-  */
-
   struct thread* t = thread_current();
   if(DEBUG) {
     printf("thread esp: %p\nstack_pointer:%p \nf->esp:%p\n", t->esp, t->stack_pointer, f->esp);
@@ -225,18 +207,22 @@ page_fault (struct intr_frame *f)
     /* Load this page. */
     if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
         {
-          if(DEBUG){printf("\tfile read FAILURE :C :C :C :C\n");}
-          palloc_free_page (kpage);
-          return false; 
+          if(DEBUG)
+            printf("\tfile read FAILURE :C :C :C :C\n");
+          //palloc_free_page (kpage);
+          //return false; 
         }
-      memset (kpage + spte->page_read_bytes, 0, spte->page_zero_bytes);
+    memset (kpage + spte->page_read_bytes, 0, spte->page_zero_bytes);
 
     /* Add the page to the process's address space. */
     if (!install_page (page_start, kpage, spte->writable)) 
      {
-       palloc_free_page (kpage); // dis aint good
-       printf("ERROR IN INSTALL PAGE\n");
+      if(DEBUG){
+        printf("kpage %p\n", kpage);
+        //palloc_free_page (kpage); // dis aint good
+        printf("ERROR IN INSTALL PAGE\n");}
        //return false; 
+       exit(SYSCALL_ERROR);
      }
     spte->resident_bit = true;
   } else { // NULL
@@ -244,23 +230,32 @@ page_fault (struct intr_frame *f)
       printf("PAGE FAULT: could not find SPT entry\n");
       // stack growth logic --------------------------------------------
     //void * limit = PHYS_BASE - PGSIZE - 0x20;
-    if(DEBUG)
-      printf("subtracting %p and %p = %p \n", f->esp, fault_addr, f->esp - fault_addr);
-    if(((uint32_t) f->esp - (uint32_t) fault_addr)<=32 || t->esp > f->esp){
+    if(DEBUG) {
+      printf("subtracting f->esp %p and fault_addr %p = %p \n", f->esp, fault_addr, (void*)((uint32_t)f->esp - (uint32_t)fault_addr));
+      printf("subtracting t->esp %p and fault_addr %p = %p \n", t->esp, fault_addr, t->esp - fault_addr);
+    }
+    if(abs((uint32_t) f->esp - (uint32_t) fault_addr)<= 32 || t->esp > f->esp || (!t->esp && fault_addr > f->esp) || (t->esp && t->esp < fault_addr)){
       if(DEBUG)
         printf("trying to grow stack\n");
       // get a page, add a SPT entry, install page
 
-      spte = create_SPT_entry(page_start, true, NULL, NULL, NULL, true);
+      //added-------------------------kernel to kernel
+      if(t->esp > f->esp){
+        if(DEBUG)
+          printf("Changed page_start to t->esp\n");
+        page_start = pg_round_down(t->esp);
+      }// end added 
+      spte = create_SPT_entry(page_start, true, (off_t)NULL, (size_t)NULL, (size_t)NULL, true);
       uint8_t *kpage = get_user_page(page_start);
-      if (!install_page (page_start, kpage, spte->writable))
-        printf("install page is borked\n");
+
+      if (!install_page (page_start, kpage, spte->writable)){
+        if(DEBUG)
+          printf("install page is borked\n");
+        exit(SYSCALL_ERROR);
+      }
     }else{
-      exit(SYSCALL_ERROR);
-    }
+      exit(SYSCALL_ERROR);}
   //------------------------------------------------------------
-    
-  }
 
 
   // --------------------------------------------------
@@ -276,4 +271,5 @@ page_fault (struct intr_frame *f)
   //printf("There is like totally a lot of crying in Pintos!\n");
   //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
   //kill (f);
+  } 
 }
