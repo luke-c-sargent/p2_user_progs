@@ -13,7 +13,7 @@
 #include "filesys/file.h"
 
 #define SYSCALL_ERROR -1
-#define DEBUG 0
+#define DEBUG 1
 //--------------------
 
 /* Number of page faults processed. */
