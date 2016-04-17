@@ -5,7 +5,7 @@
 #include <inttypes.h>
 
 #define ERROR_CODE -1
-#define DEBUG 0
+#define DEBUG 1
 
 void add_swap_entry_helper(int offset, void* vaddr);
 
@@ -62,7 +62,7 @@ void add_swap_entry_helper(int offset, void* vaddr)
 void remove_swap_entry(int index, void* paddr, struct SPT_entry* spte)
 {
 	if(DEBUG)
-		printf("Removing swap entry for paddr %p at index %d...", paddr, index);
+		printf("Removing swap entry for paddr %p at index %d...\n", paddr, index);
 	if(swap_table[index].tid == 0) 
 	{
 		exit (ERROR_CODE);
@@ -72,6 +72,9 @@ void remove_swap_entry(int index, void* paddr, struct SPT_entry* spte)
 	//take memory and write to frame
 	for(i = 0; i < SECTORS_PER_PAGE; ++i) 
 	{
+		if(DEBUG)
+			printf("off: %d sects: %d i: %d result: %d\n", index, SECTORS_PER_PAGE, i, index * SECTORS_PER_PAGE + i);
+
 		block_read (swap_block, index * SECTORS_PER_PAGE + i, paddr);
 		paddr += BLOCK_SECTOR_SIZE;
 	}
