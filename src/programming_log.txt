@@ -1,13 +1,153 @@
-FIRST DRAFT DONT TURN THIS IN IDIOT
-actual coding:
-friday 8th:
-2-6:15
+4/8, 2:00p - 6:15p Brittany, Luke, Ali 4.25 hours
+Driver Order and Time Length:
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 45 minutes
 
-sunday 10th:
-2:30-6:00
+4/10, 2:30p - 6:00p Brittany, Luke, Ali 3.5 hours
+Driver Order and Time Length:
+Ali, 60 minutes
+Luke, 60 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
 
-monday 11th:
-1-8
+4/11, 1:00p - 8:00p Brittany, Luke, Ali 7 hours
+Driver Order and Time Length:
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 60 minutes
+Brittany, 30 minutes
+Ali, 60 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 45 minutes
+Brittany, 15 minutes
+Ali 60 minutes
 
-tuesday 12th:
-11-????
+4/12, 11:00a - 8:00p Brittany, Luke, Ali 9 hours
+Driver Order and Time Length:
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 45 minutes
+Brittany, 15 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 15 minutes
+Ali, 45 minutes
+Luke, 60 minutes
+Brittany, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+
+4/13, 1:00p - 8:30p Brittany, Luke, Ali 7.5 hours
+Driver Order and Time Length:
+Luke, 30 minutes
+Ali, 30 minutes
+Brittany, 30 m inutes
+Luke, 30 minutes
+Ali, 30 minutes
+Brittany, 30 minutes
+Luke, 60 minutes
+Ali, 60 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 45 minutes
+Brittany, 15 minutes
+Luke, 30 minutes
+
+4/14, 10:00a - 8:30p Brittany, Luke, Ali 10.5 hours
+Driver Order and Time Length:
+Ali, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Brittany, 30 minutes
+Luke, 60 minutes
+Ali, 60 minutes
+Brittany, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Brittany, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 45 minutes
+Brittany, 15 minutes
+ALi, 30 minutes
+Luke, 30 minutes
+ALi, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+
+4/15, 2:00p - 8:00p Brittany, Luke, Ali 6 hours
+Driver Order and Time Length:
+Ali, 60 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 45 minutes
+Brittany, 15 minutes
+
+4/16, 9:30a - 10:00p Brittany, Luke, Ali 12.5 hours
+Driver Order and Time Length:
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Brittany, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 45 minutes
+Ali, 15 minutes
+
+4/17, 9:00a - 6:00p Brittany, Luke, Ali 9 hours
+Driver Order and Time Length:
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Ali, 30 minutes
+Luke, 30 minutes
+Brittany, 30 minutes
