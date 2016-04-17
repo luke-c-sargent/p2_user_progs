@@ -41,8 +41,9 @@ process_execute (const char *file_name)
   // added ---------------------------------------
   // parse command line, copy string
   char * arg_copy = palloc_get_page (0);
-  if (arg_copy == NULL){
-    printf("ERROR: ARG COPY FAIL\n");
+  if (arg_copy == NULL)
+  {
+    printf ("ERROR: ARG COPY FAIL\n");
     return TID_ERROR;
   }
 
@@ -52,7 +53,7 @@ process_execute (const char *file_name)
   for (token = strtok_r (arg_copy, " ", &save_ptr); token != NULL;
     token = strtok_r (NULL, " ", &save_ptr))
   {
-    int length = strlen(token);
+    int length = strlen (token);
     if (DEBUG)
       printf ("[%d]'%s'\n", length, token);
     strlcpy (arg_copy + indexer, token, length+1);
@@ -374,9 +375,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
     {
       printf ("load: %s: open failed\n", file_name);
 
-      struct thread_child* tcp = get_child_struct_by_child(thread_current());
+      struct thread_child* tcp = get_child_struct_by_child (thread_current ());
       if (DEBUG)
-        printf("%s failed its load\n", tcp->child_pointer->name);
+        printf ("%s failed its load\n", tcp->child_pointer->name);
       tcp->exit_status = SYSCALL_ERROR;
       goto done; 
     }
@@ -397,7 +398,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   if (DEBUG)
-    printf("LOAD: starting to run for loop!\n");
+    printf ("LOAD: starting to run for loop!\n");
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
   for (i = 0; i < ehdr.e_phnum; i++) 
@@ -464,16 +465,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
         }
     }
   if (DEBUG)
-    printf("For Loop Complete\n");
+    printf ("For Loop Complete\n");
   /* Set up stack. */
   if (!setup_stack (esp, file_name)){
     if (DEBUG)
     {
-      printf("!!SETUP_STACK FAILED\n");
+      printf ("!!SETUP_STACK FAILED\n");
     }
     goto done;
   } else if (DEBUG){
-    printf("setup stack successful\n");
+    printf ("setup stack successful\n");
   }
 
   /* Start address. */
@@ -486,12 +487,12 @@ done:
   /* We arrive here whether the load is successful or not. */
   //  file_close (file);
   // ADDED FOR EXEC-MISSING
-  struct thread_child* tcp = get_child_struct_by_child(thread_current());
+  struct thread_child* tcp = get_child_struct_by_child (thread_current ());
   if (!success)
     tcp->exit_status = SYSCALL_ERROR;
 
   tcp->parent_waiting = 0;
-  sema_up(&thread_current()->parent->load_sema);
+  sema_up(&thread_current ()->parent->load_sema);
 
   if (DEBUG)
     printf("RETURNING SUCCESS = %d\n", success);
@@ -584,35 +585,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       
       // -----------------------------------------------------------------------
       if (DEBUG)
-        printf("creating SPT_entry with upg: %p - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
-      struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, page_read_bytes, page_zero_bytes, writable);
+        printf ("creating SPT_entry with upg: %p - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
+      struct SPT_entry* temp = create_SPT_entry (upage, false, ofs, page_read_bytes, page_zero_bytes, writable);
 
-      // printf("upage 1: %p\n", upage);
-      //ASSERT(get_SPT_entry(upage));
-      // printf("upage 2: %p\n", upage);
       if (DEBUG)
         printf("  ... done!\n");
       // -----------------------------------------------------------------------
-
-      // /* Get a page of memory. */
-      // uint8_t *kpage = get_user_page();
-      // if (kpage == NULL)
-      //   return false;
-
-      // /* Load this page. */
-      // if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-      //   {
-      //     palloc_free_page (kpage);
-      //     return false; 
-      //   }
-      // memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
-      // /* Add the page to the process's address space. */
-      // if (!install_page (upage, kpage, writable)) 
-      //   {
-      //     palloc_free_page (kpage);
-      //     return false; 
-      //   }
 
       /* Advance. */
       read_bytes -= page_read_bytes;
@@ -631,9 +609,8 @@ setup_stack (void **esp, char * arg_array) // modified signature
   uint8_t *kpage;
   bool success = false;
 
-  //kpage = palloc_get_page (PAL_USER | PAL_ZERO); OLD
   //-----------------------------------------------------------------
-  kpage = get_user_page((uint8_t *) PHYS_BASE - PGSIZE); // this is the stack page
+  kpage = get_user_page ((uint8_t *) PHYS_BASE - PGSIZE); // this is the stack page
     //insert this into the SPT NEED TO ADD SYNCH
   struct SPT_entry* stack_spte = create_SPT_entry((uint8_t *) PHYS_BASE - PGSIZE,
       true, NULL, NULL, NULL, true);
@@ -666,7 +643,7 @@ setup_stack (void **esp, char * arg_array) // modified signature
 
   // avoid corrupting thread page
   // limit arguments to pagesize / 2
-  int actual_thread_size = (int)&(thread_current()->magic) + 4 - (int)thread_current();
+  int actual_thread_size = (int)&(thread_current ()->magic) + 4 - (int)thread_current ();
   if (PGSIZE - actual_thread_size < idx)
     return false;
   

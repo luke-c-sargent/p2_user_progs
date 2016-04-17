@@ -34,31 +34,17 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   // ----------------------------------------------------
-  thread_current()->esp = f->esp;
-  /*if (){
-    f->
-  }*/
+  thread_current ()->esp = f->esp;
 
-  // ----------------------------------------------------
-
-  // switch statement differentiates between system calls
-  /*
   if (DEBUG)
-  {
-    printf ("syscall_handle hex dump\n");
-    hex_dump ((f->esp), (f->esp), 112, 1);
-  }
-*/
-  if (DEBUG)
-    printf("syscall handler\n");
+    printf ("syscall handler\n");
   // validate initial memory access
-  int valid_memory=1;
+  int valid_memory = 1;
 
   if (!is_user_vaddr (f->esp))
   {
     if (DEBUG)
       printf ("ptr not virtual address\n");
-        
     valid_memory = 0;
   } 
   else if (f->esp == NULL)
@@ -106,7 +92,6 @@ syscall_handler (struct intr_frame *f UNUSED)
     { 
       if (DEBUG){
         printf ("SYS_EXEC signal\n");
-        //hex_dump ((f->esp), (f->esp), 80, 1);
       }
       arg_error_check (f->esp,1);
       f->eax = exec (*(char**)(f->esp + 4));
@@ -144,7 +129,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       if (DEBUG)
         printf ("SYS_OPEN signal %p\n", *(char**)(f->esp+4));
       arg_error_check (f->esp,1);
-      if (!is_paged(*(char**)(f->esp+4)))
+      if (!is_paged (*(char**)(f->esp+4)))
       {
           if (DEBUG)
               printf ("not a user virtual address\n");
@@ -268,16 +253,6 @@ void exit (int status)
   if (DEBUG)
     printf ("child %s exited with status %d\n", child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
   printf ("%s: exit(%d)\n", child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
-  
-  /*
-  if (child_struct_ptr->parent_waiting)
-  {
-    if (DEBUG){
-      printf("child %s sema'ing up on parent %s\n", child_struct_ptr->child_pointer->name, child_struct_ptr->child_pointer->parent->name);
-    }
-    child_struct_ptr->parent_waiting = 0;
-    sema_up (&child_struct_ptr->child_pointer->parent->sema);
-  }*/
 
   thread_exit();
 }
@@ -290,27 +265,6 @@ pid_t exec (const char *cmd_line)
 {
   if (!is_user_and_mapped(cmd_line))
     return SYSCALL_ERROR;
-/*
-  // hacky test, i dont like it:
-  // get file name
-  char filename[15]; // max filename size
-  int i = 0;
-  while(cmd_line[i] != ' '){
-    filename[i] = cmd_line[i];
-    ++i;
-    if (i==14)
-      break;
-  }
-  filename[i]= 0;
-  //printf("---%s\n", filename);
-  if (open(filename) != SYSCALL_ERROR)
-    printf("");//close(cmd_line); // doesntwork yet :C
-  else{
-    if (DEBUG)
-      printf("%s ERROR!!!!!",cmd_line);
-    return SYSCALL_ERROR;
-  }
-  // end hacky test*/
 
   if (DEBUG)
   {
@@ -329,13 +283,10 @@ pid_t exec (const char *cmd_line)
   {
     printf ("EXEC: pid is %d, exit status %d\n", pid, child_thread_ptr->exit_status);
   }
-  
 
-  //if (DEBUG)
-    //printf("EXEC: %s exit status: %d \n", child_thread_ptr->child_pointer->parent->name, child_thread_ptr->exit_status);
   if (child_thread_ptr->exit_status == SYSCALL_ERROR)
     return SYSCALL_ERROR;
-  //wait(pid);
+
   return pid;
 }
 
@@ -347,32 +298,7 @@ int wait (pid_t pid)
 {
   if (DEBUG)
     printf ("wait called on PID %d\n", pid);
-  // fail cases:
-  // -- pid not child:
-  // struct thread* child_ptr = get_child_by_tid(pid);
 
-  // if (child_ptr == NULL){
-  //   if (DEBUG)
-  //     printf("child pointer is bad\n");
-  //   return SYSCALL_ERROR;    
-  // }
-
-  // if (DEBUG)
-  //   printf("thread %p: %s gotten\n", child_ptr, child_ptr->name);
-
-  // struct thread_child* thread_cp = get_child_struct_by_child(child_ptr);
-
-   /* 
-  // is already waiting
-  printf("OHNOES!!!!!!!!!    %p\n", thread_cp);
-  if (thread_cp->parent_waiting != 0){
-    if (DEBUG)
-      printf("already waiting\n");
-    return SYSCALL_ERROR;
-  }*/
-
-  // sema down -----
-  //sema_down(&thread_current ()-> sema);
   return process_wait (pid);
 }
 // create:

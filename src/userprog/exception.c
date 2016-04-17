@@ -156,7 +156,7 @@ page_fault (struct intr_frame *f)
   if (fault_addr == NULL)
   {
     if (DEBUG)
-      printf("PAGE FAULT: fault address was NULL\n");
+      printf ("PAGE FAULT: fault address was NULL\n");
     exit(SYSCALL_ERROR);
   }
   //=========================================
@@ -169,30 +169,25 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  struct thread* t = thread_current();
+  struct thread* t = thread_current ();
   if (DEBUG) {
-    printf("thread esp: %p\nstack_pointer:%p \nf->esp:%p\n", t->esp, t->stack_pointer, f->esp);
-    printf("PAGE FAULT: fault addr: %p\n", fault_addr);
+    printf ("thread esp: %p\nstack_pointer:%p \nf->esp:%p\n", t->esp, t->stack_pointer, f->esp);
+    printf ("PAGE FAULT: fault addr: %p\n", fault_addr);
   }
 
   void* page_start = pg_round_down (fault_addr);
-  struct SPT_entry* spte = get_SPT_entry(page_start);
+  struct SPT_entry* spte = get_SPT_entry (page_start);
 
-
-  //void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
-
-  //if (DEBUG && paddr == NULL)
-    //printf("Page Fault: VA is not mapped\n");
-  
-
-  
-
-  if (spte){
-    if (DEBUG && is_user_vaddr(fault_addr)){
-      printf("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, spte->page_read_bytes, spte->page_zero_bytes, spte->writable);
+  if (spte)
+  {
+    if (DEBUG && is_user_vaddr(fault_addr))
+    {
+      printf ("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", 
+        spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, 
+        spte->page_read_bytes, spte->page_zero_bytes, spte->writable);
     }
     if (DEBUG){
-      printf("\tthread %s fault address %p rounded to %p \n\n", thread_current()->name, fault_addr, page_start);
+      printf ("\tthread %s fault address %p rounded to %p \n\n", thread_current ()->name, fault_addr, page_start);
     }
 
     file_seek (t->executable, spte->ofs);
@@ -200,7 +195,7 @@ page_fault (struct intr_frame *f)
     uint8_t *kpage = get_user_page(page_start);
 
     if (kpage == NULL){
-      printf("KPAGE ALLOCATION FAIL\n"); // eviction
+      printf ("KPAGE ALLOCATION FAIL\n"); // eviction
     }
 
 
@@ -208,7 +203,7 @@ page_fault (struct intr_frame *f)
     if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
         {
           if (DEBUG)
-            printf("\tfile read FAILURE :C :C :C :C\n");
+            printf ("\tfile read FAILURE :C :C :C :C\n");
           //palloc_free_page (kpage);
           //return false; 
         }
@@ -218,58 +213,51 @@ page_fault (struct intr_frame *f)
     if (!install_page (page_start, kpage, spte->writable)) 
      {
       if (DEBUG){
-        printf("kpage %p\n", kpage);
+        printf ("kpage %p\n", kpage);
         //palloc_free_page (kpage); // dis aint good
-        printf("ERROR IN INSTALL PAGE\n");}
+        printf ("ERROR IN INSTALL PAGE\n");}
        //return false; 
        exit(SYSCALL_ERROR);
      }
     spte->resident_bit = true;
-  } else { // NULL
+  } else 
+  {
     if (DEBUG)
-      printf("PAGE FAULT: could not find SPT entry\n");
+      printf ("PAGE FAULT: could not find SPT entry\n");
       // stack growth logic --------------------------------------------
-    //void * limit = PHYS_BASE - PGSIZE - 0x20;
     if (DEBUG) {
-      printf("subtracting f->esp %p and fault_addr %p = %p \n", f->esp, fault_addr, (void*)((uint32_t)f->esp - (uint32_t)fault_addr));
-      printf("subtracting t->esp %p and fault_addr %p = %p \n", t->esp, fault_addr, t->esp - fault_addr);
+      printf ("subtracting f->esp %p and fault_addr %p = %p \n", f->esp, fault_addr, (void*)((uint32_t)f->esp - (uint32_t)fault_addr));
+      printf ("subtracting t->esp %p and fault_addr %p = %p \n", t->esp, fault_addr, t->esp - fault_addr);
     }
-    if (abs((uint32_t) f->esp - (uint32_t) fault_addr)<= 32 || t->esp > f->esp || (!t->esp && fault_addr > f->esp) || (t->esp && t->esp < fault_addr)){
+    if (abs ((uint32_t) f->esp - (uint32_t) fault_addr)<= 32 || t->esp > f->esp || (!t->esp && fault_addr > f->esp) || (t->esp && t->esp < fault_addr))
+    {
       if (DEBUG)
-        printf("trying to grow stack\n");
+        printf ("trying to grow stack\n");
       // get a page, add a SPT entry, install page
 
       //added-------------------------kernel to kernel
-      if (t->esp > f->esp){
+      if (t->esp > f->esp)
+      {
         if (DEBUG)
-          printf("Changed page_start to t->esp\n");
-        page_start = pg_round_down(t->esp);
+          printf ("Changed page_start to t->esp\n");
+        page_start = pg_round_down (t->esp);
       }// end added 
-      spte = create_SPT_entry(page_start, true, (off_t)NULL, (size_t)NULL, (size_t)NULL, true);
-      uint8_t *kpage = get_user_page(page_start);
+      spte = create_SPT_entry (page_start, true, (off_t)NULL, (size_t)NULL, (size_t)NULL, true);
+      uint8_t *kpage = get_user_page (page_start);
 
-      if (!install_page (page_start, kpage, spte->writable)){
+      if (!install_page (page_start, kpage, spte->writable))
+      {
         if (DEBUG)
-          printf("install page is borked\n");
-        exit(SYSCALL_ERROR);
+          printf ("install page is borked\n");
+        exit (SYSCALL_ERROR);
       }
-    }else{
-      exit(SYSCALL_ERROR);}
-  //------------------------------------------------------------
+    }
+    else
+    {
+      exit (SYSCALL_ERROR);
+    }
 
-
-  // --------------------------------------------------
   if (DEBUG)
-    printf("\tPage_start: %p\n", page_start);
-
-  // printf ("Page fault at %p: %s error %s page in %s context.\n\n",
-  //         fault_addr,
-  //         not_present ? "not present" : "rights violation",
-  //         write ? "writing" : "reading",
-  //         user ? "user" : "kernel");
-
-  //printf("There is like totally a lot of crying in Pintos!\n");
-  //printf(" :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C :C\n");
-  //kill (f);
+    printf ("\tPage_start: %p\n", page_start);
   } 
 }
