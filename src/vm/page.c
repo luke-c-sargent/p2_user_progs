@@ -16,13 +16,15 @@ struct hash* get_curr_hash ()
 struct SPT_entry* create_SPT_entry (void* vaddr, bool resident_bit, 
 		 off_t ofs, size_t page_read_bytes, size_t page_zero_bytes, bool writable)
 {
-	struct SPT_entry* temp = (struct SPT_entry*) malloc (sizeof (struct SPT_entry));
+	struct SPT_entry* temp = (struct SPT_entry*) calloc (sizeof (struct SPT_entry), 1);
 	// initialize entry values
 	temp->is_stack_page = false;
 	temp->vaddr = vaddr;
 
 	temp->page_number = vaddr_to_page_num (vaddr);
 	temp->resident_bit = resident_bit;
+	temp->swap_index = 0;
+	temp->dirty_bit = false;
 	temp->ofs = ofs;
 	temp->page_read_bytes = page_read_bytes;
 	temp->page_zero_bytes = page_zero_bytes;

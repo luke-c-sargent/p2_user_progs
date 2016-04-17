@@ -27,26 +27,57 @@ void init_swap_table(void)
 	swap_table = calloc(sizeof(struct Swap_entry)*entries, 1);
 }
 
-bool add_swap_entry(void* vaddr)
+int add_swap_entry(void* vaddr)
 {
-	int i;
-	for (i = 0; i < entries; ++i)
+	if(DEBUG)
+		printf("Searching %d swap entries for a location for vaddr %p\n", entries, vaddr);
+	uint32_t i;
+	for (i = 0;  i < entries; ++i)
 	{
-		if(swap_table[i].tid == NULL) {
+
+		if(swap_table[i].tid == 0) 
+		{
 			swap_table[i].tid = thread_current()->tid;
 			swap_table[i].vaddr = vaddr;
+			if(DEBUG)
+				printf("adding tid %d's vaddr %p at index %d\n", swap_table[i].tid, vaddr, i);
 			add_swap_entry_helper(i, vaddr);
-			return true;
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }
 
 void add_swap_entry_helper(int offset, void* vaddr)
 {
-	int i;
+	uint32_t i;
 	for(i = 0; i < SECTORS_PER_PAGE; ++i) {
-		block_write (swap_block, offset*SECTORS_PER_PAGE + i, vaddr);
+		if(DEBUG){printf("off: %d sects: %d i: %d result: %d\n", offset, SECTORS_PER_PAGE, i, offset * SECTORS_PER_PAGE + i);}
+		block_write (swap_block, offset * SECTORS_PER_PAGE + i, vaddr);
 		vaddr += BLOCK_SECTOR_SIZE;
 	}
+}
+
+//read and remove
+void remove_swap_entry(int index, void* paddr, struct SPT_entry* spte)
+{
+	if(DEBUG)
+		printf("Removing swap entry for paddr %p at index %d...", paddr, index);
+	if(swap_table[index].tid == 0) 
+	{
+		exit (ERROR_CODE);
+	}
+
+	uint32_t i;
+	//take memory and write to frame
+	for(i = 0; i < SECTORS_PER_PAGE; ++i) 
+	{
+		block_read (swap_block, index * SECTORS_PER_PAGE + i, paddr);
+		paddr += BLOCK_SECTOR_SIZE;
+	}
+	swap_table[index].tid = 0;
+	swap_table[index].vaddr = 0;
+	spte->swap_index = -1;
+	if(DEBUG)
+		printf("... removed\n");
 }

@@ -11,6 +11,7 @@
 #include "vm/page.h"
 #include "userprog/process.h"
 #include "filesys/file.h"
+#include "vm/swap.h"
 
 #define SYSCALL_ERROR -1
 #define DEBUG 0
@@ -180,7 +181,7 @@ page_fault (struct intr_frame *f)
 
   if (spte)
   {
-    if (DEBUG && is_user_vaddr(fault_addr))
+    if (false && DEBUG && is_user_vaddr(fault_addr))
     {
       printf ("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", 
         spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, 
@@ -190,24 +191,34 @@ page_fault (struct intr_frame *f)
       printf ("\tthread %s fault address %p rounded to %p \n\n", thread_current ()->name, fault_addr, page_start);
     }
 
-    file_seek (t->executable, spte->ofs);
     /* Get a page of memory. */
     uint8_t *kpage = get_user_page(page_start);
-
     if (kpage == NULL){
       printf ("KPAGE ALLOCATION FAIL\n"); // eviction
+      exit(SYSCALL_ERROR);
     }
 
+    // swap stuff 
+    if(!spte->resident_bit && (spte->dirty_bit || spte->is_stack_page)){
+      if(DEBUG)
+        printf("Resident bit: %d, Dirty bit: %d, is stack page: %d\n", spte->resident_bit, spte->dirty_bit, spte->is_stack_page);
+      remove_swap_entry(spte->swap_index, kpage, spte);
+    }
+    else
+    {
 
-    /* Load this page. */
-    if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
-        {
-          if (DEBUG)
-            printf ("\tfile read FAILURE :C :C :C :C\n");
-          //palloc_free_page (kpage);
-          //return false; 
-        }
-    memset (kpage + spte->page_read_bytes, 0, spte->page_zero_bytes);
+      file_seek (t->executable, spte->ofs);
+
+      /* Load this page. */
+      if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
+          {
+            if (DEBUG)
+              printf ("\tfile read FAILURE :C :C :C :C\n");
+            //palloc_free_page (kpage);
+            //return false; 
+          }
+      memset (kpage + spte->page_read_bytes, 0, spte->page_zero_bytes);
+    }
 
     /* Add the page to the process's address space. */
     if (!install_page (page_start, kpage, spte->writable)) 

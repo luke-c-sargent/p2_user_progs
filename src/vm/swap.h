@@ -3,6 +3,7 @@
 
 #include "threads/thread.h"
 #include "devices/block.h"
+#include "vm/page.h"
 
 #define SECTORS_PER_PAGE PGSIZE/BLOCK_SECTOR_SIZE
 
@@ -22,9 +23,9 @@ static uint32_t entries;
 
 void init_swap_table(void);
 
-bool add_swap_entry(void* vaddr);
+int add_swap_entry(void* vaddr);
 
-// void remove_swap_entry();
+void remove_swap_entry(int index, void* paddr, struct SPT_entry * spte);
 
 // void get_swap_entry();
 

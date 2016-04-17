@@ -61,6 +61,9 @@ uint8_t* get_user_page(void * vaddr)
 			bump_ptr = 0;
 		if (total == max_frame)
 		{
+			if(DEBUG){
+				printf("bumpy bumperson: %d \n", bump_ptr);
+			}
 			return evict_page();
 		}
 	}
@@ -75,25 +78,40 @@ uint8_t* evict_page(void)
 	if (DEBUG)
 		printf ("thread_current() name: %s\n", t->name);
 
+
 	//Finding page to evict using accessed bit
 	while (pagedir_is_accessed (t->pagedir, frame_table[bump_ptr].vaddr))
 	{
 		pagedir_set_accessed (t->pagedir, frame_table[bump_ptr].vaddr, false);
 		++bump_ptr;
+		if(bump_ptr == max_frame){
+			bump_ptr = 0;
+		}
 	}
 
 	//Emptying frame table entry
 	frame_table[bump_ptr].status = FT_EMPTY;
 
+	if(DEBUG){
+		printf("ft: %p  bump_ptr: %d  vaddr: %p\n", frame_table, bump_ptr, frame_table[bump_ptr].vaddr);
+	}
+
 	//Updating SPT_entry info
 	struct SPT_entry *spte = get_SPT_entry(frame_table[bump_ptr].vaddr);
+	// dies above ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 	spte->resident_bit = false;
-
 	//Swapping all stack/dirty pages to disk
+
+	if(DEBUG){
+		
+		//printf("pagedir: %p ", t->pagedir);
+		printf("vaddr: %p ", frame_table[bump_ptr].vaddr);
+		printf("stacky: %p \n", spte->is_stack_page);
+	}
 	if (pagedir_is_dirty (t->pagedir, frame_table[bump_ptr].vaddr) || spte->is_stack_page)
 	{
-		if(DEBUG) {
-			if(spte->is_stack_page)
+		if (DEBUG) {
+			if (spte->is_stack_page)
 				printf("Moving stack page to swap space\n");
 		 	else
 		 		printf("Moving dirty page to swap space\n");
@@ -101,13 +119,14 @@ uint8_t* evict_page(void)
 
 		if(pagedir_is_dirty (t->pagedir, frame_table[bump_ptr].vaddr))
 			spte->dirty_bit = true;
-		if(!add_swap_entry(frame_table[bump_ptr].vaddr)) {
-			if(DEBUG)
+
+		spte->swap_index = add_swap_entry(frame_table[bump_ptr].vaddr);
+		if (spte->swap_index == -1) {
+			if (DEBUG)
 				printf("ERROR adding swap entry\n");
 			exit(ERROR_CODE);
 		}
 	}
-
 
 	//Updating page directory entry
 	pagedir_clear_page (t->pagedir, frame_table[bump_ptr].vaddr);

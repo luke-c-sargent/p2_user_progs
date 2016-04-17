@@ -14,7 +14,7 @@ enum FT_STATUS
 struct FrameTableEntry 
 {
 	void * frame_ptr;
-	uint32_t* pte;
+	// uint32_t* pte;
 	int status;
 	void * vaddr;
 };

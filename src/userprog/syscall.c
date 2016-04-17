@@ -11,6 +11,7 @@
 #include "threads/palloc.h"
 
 #define SYSCALL_ERROR -1
+#define DEBUG 0
 
 struct filesys_sema;
 
@@ -21,8 +22,6 @@ struct file * fd_to_file_ptr (int fd);
 bool is_user_and_mapped (void* addr);
 //-----------------------------------------------
 static void syscall_handler (struct intr_frame *);
-
-#define DEBUG 0
 
 void
 syscall_init (void) 

@@ -23,6 +23,7 @@ struct SPT_entry {
 	void * vaddr;
 	uint32_t page_number;
 	bool resident_bit;
+	int swap_index;
 	bool dirty_bit;
 	off_t ofs;
 	size_t page_read_bytes;
