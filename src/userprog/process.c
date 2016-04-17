@@ -86,11 +86,11 @@ process_execute (const char *file_name)
     hex_dump (fn_copy, fn_copy, 80, 1);
   }*/
   tid = thread_create (arg_copy, PRI_DEFAULT, start_process, fn_copy);
-  if(DEBUG)
+  if (DEBUG)
     printf("gettig TID %d child struct\n", tid);
 
   struct thread* child_thread_ptr = get_child_by_tid (tid)->child_pointer;
-  if(DEBUG)
+  if (DEBUG)
   {
     struct thread_child* tcp = get_child_struct_by_child(child_thread_ptr);
     printf("!!!!!! %p exit status %d parent: %p\n", tcp, tcp->exit_status, tcp->child_pointer->parent);
@@ -120,12 +120,12 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
 
-  if(DEBUG)
+  if (DEBUG)
     printf("initializing hash...");
 
   hash_init(&(thread_current()->SP_table.hash_table), hasher, page_less, NULL);
   
-  if(DEBUG)
+  if (DEBUG)
     printf("... hash initialized\n");
   
   success = load (file_name, &if_.eip, &if_.esp);
@@ -134,14 +134,14 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
 
-  if(DEBUG)
+  if (DEBUG)
     printf("START PROCESS success status %d\n", success);
 
-  if(!success)
+  if (!success)
     child_struct_ptr->exit_status = SYSCALL_ERROR;
   
-  if(child_struct_ptr->parent_waiting){
-    if(DEBUG)
+  if (child_struct_ptr->parent_waiting){
+    if (DEBUG)
       printf("child thread sema'ing up on: %s\n",child_struct_ptr->child_pointer->parent->name);
     //child_struct_ptr->parent_waiting = 0;
     //sema_up(&child_struct_ptr->child_pointer->parent->sema);
@@ -152,19 +152,19 @@ start_process (void *file_name_)
     
     child_struct_ptr->exit_status = SYSCALL_ERROR;
 
-    if(DEBUG)
+    if (DEBUG)
     {
       printf("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
 
     }
     thread_exit ();
   }
-  if(DEBUG)
+  if (DEBUG)
   {
     printf("...  successfully loaded\n");
   }
 
-  if(DEBUG)
+  if (DEBUG)
     printf("\n\n%s hash initialized\n\n", thread_current()->name);
 
   /* Start the user process by simulating a return from an
@@ -220,7 +220,7 @@ process_wait (tid_t child_tid)
   list_remove(&child_struct_ptr->elem);
 
 
-  //if(DEBUG)
+  //if (DEBUG)
     //printf("exit status of %p: %s is now %d \n", child_struct_ptr->child_pointer, child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
 
   return exit_status;
@@ -346,7 +346,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
-  if(DEBUG)
+  if (DEBUG)
     printf("LOAD: loading\n");
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
@@ -361,21 +361,21 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
-  if(DEBUG){
+  if (DEBUG){
     printf("%s: process activated\n", t->name);
   }
 
   /* Open executable file. */
   file = filesys_open (file_name);
   t->executable = file;
-  if(DEBUG)
+  if (DEBUG)
     printf("\nFILE PTR %p\n", file);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
 
       struct thread_child* tcp = get_child_struct_by_child(thread_current());
-      if(DEBUG)
+      if (DEBUG)
         printf("%s failed its load\n", tcp->child_pointer->name);
       tcp->exit_status = SYSCALL_ERROR;
       goto done; 
@@ -396,7 +396,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
 
-  if(DEBUG)
+  if (DEBUG)
     printf("LOAD: starting to run for loop!\n");
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
@@ -447,15 +447,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
-              if(DEBUG)
+              if (DEBUG)
                 printf("for iteration %d ... ", i);
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable)){
-                if(DEBUG)
+                if (DEBUG)
                   printf("LOAD for loop: failure of load_segment\n");
                 goto done;
               }
-              if(DEBUG)
+              if (DEBUG)
                 printf("--- ... iteration complete!\n");
             }
           else
@@ -463,7 +463,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
           break;
         }
     }
-  if(DEBUG)
+  if (DEBUG)
     printf("For Loop Complete\n");
   /* Set up stack. */
   if (!setup_stack (esp, file_name)){
@@ -472,7 +472,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf("!!SETUP_STACK FAILED\n");
     }
     goto done;
-  } else if(DEBUG){
+  } else if (DEBUG){
     printf("setup stack successful\n");
   }
 
@@ -487,13 +487,13 @@ done:
   //  file_close (file);
   // ADDED FOR EXEC-MISSING
   struct thread_child* tcp = get_child_struct_by_child(thread_current());
-  if(!success)
+  if (!success)
     tcp->exit_status = SYSCALL_ERROR;
 
   tcp->parent_waiting = 0;
   sema_up(&thread_current()->parent->load_sema);
 
-  if(DEBUG)
+  if (DEBUG)
     printf("RETURNING SUCCESS = %d\n", success);
   
   return success;
@@ -571,7 +571,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   //file_seek (file, ofs); // probably not necessary
-  if(DEBUG)
+  if (DEBUG)
     printf("\n\nLOAD_SEGMENT: while loop starting with file %p\n", file);
 
   while (read_bytes > 0 || zero_bytes > 0) 
@@ -583,14 +583,14 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
       // -----------------------------------------------------------------------
-      if(DEBUG)
+      if (DEBUG)
         printf("creating SPT_entry with upg: %p - rb: %d - ofs: %d - write: %d....",upage, false, ofs, writable);
       struct SPT_entry* temp = create_SPT_entry(upage, false, ofs, page_read_bytes, page_zero_bytes, writable);
 
       // printf("upage 1: %p\n", upage);
       //ASSERT(get_SPT_entry(upage));
       // printf("upage 2: %p\n", upage);
-      if(DEBUG)
+      if (DEBUG)
         printf("  ... done!\n");
       // -----------------------------------------------------------------------
 
@@ -667,7 +667,7 @@ setup_stack (void **esp, char * arg_array) // modified signature
   // avoid corrupting thread page
   // limit arguments to pagesize / 2
   int actual_thread_size = (int)&(thread_current()->magic) + 4 - (int)thread_current();
-  if(PGSIZE - actual_thread_size < idx)
+  if (PGSIZE - actual_thread_size < idx)
     return false;
   
   // populate stack

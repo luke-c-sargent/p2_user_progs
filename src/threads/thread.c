@@ -132,7 +132,7 @@ struct thread_child* get_child_by_tid (tid_t child_tid)
       return tcp;
     }
   }
-  if(DEBUG)
+  if (DEBUG)
     printf ("ERROR: tid %d not found in child list\n", child_tid);
   return NULL;
 }
@@ -282,7 +282,7 @@ thread_create (const char *name, int priority,
   struct thread_child* child_struct_ptr = palloc_get_page (PAL_ZERO);
   if ( child_struct_ptr == NULL ) 
   {
-    if(DEBUG)
+    if (DEBUG)
       printf("child_struct allocation of page failed\n");
     // if page wasnt allocated properly
     //ASSERT(false);
@@ -297,7 +297,7 @@ thread_create (const char *name, int priority,
 
 
 
-  if(DEBUG){
+  if (DEBUG){
     printf("child_tp: %p\n", t);
     printf("populating child struct TID: %d at addr %p\n", tid, child_struct_ptr);
     printf("setting parent to %p, %s \n", t->parent, t->parent->name);

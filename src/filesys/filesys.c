@@ -29,10 +29,10 @@ filesys_init (bool format)
   inode_init ();
   free_map_init ();
   //----------------------------------------------------
-  if(DEBUG)
+  if (DEBUG)
     printf("initializing filesystem semaphore... ");
   sema_init(&filesys_sema,1);
-  if(DEBUG)
+  if (DEBUG)
     printf("  ... initialized! \n");
   //----------------------------------------------------
 

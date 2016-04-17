@@ -35,7 +35,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   // ----------------------------------------------------
   thread_current()->esp = f->esp;
-  /*if(){
+  /*if (){
     f->
   }*/
 
@@ -49,7 +49,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     hex_dump ((f->esp), (f->esp), 112, 1);
   }
 */
-  if(DEBUG)
+  if (DEBUG)
     printf("syscall handler\n");
   // validate initial memory access
   int valid_memory=1;
@@ -272,7 +272,7 @@ void exit (int status)
   /*
   if (child_struct_ptr->parent_waiting)
   {
-    if(DEBUG){
+    if (DEBUG){
       printf("child %s sema'ing up on parent %s\n", child_struct_ptr->child_pointer->name, child_struct_ptr->child_pointer->parent->name);
     }
     child_struct_ptr->parent_waiting = 0;
@@ -288,7 +288,7 @@ void exit (int status)
 // returns: pid of executed process
 pid_t exec (const char *cmd_line)
 {
-  if(!is_user_and_mapped(cmd_line))
+  if (!is_user_and_mapped(cmd_line))
     return SYSCALL_ERROR;
 /*
   // hacky test, i dont like it:
@@ -298,15 +298,15 @@ pid_t exec (const char *cmd_line)
   while(cmd_line[i] != ' '){
     filename[i] = cmd_line[i];
     ++i;
-    if(i==14)
+    if (i==14)
       break;
   }
   filename[i]= 0;
   //printf("---%s\n", filename);
-  if(open(filename) != SYSCALL_ERROR)
+  if (open(filename) != SYSCALL_ERROR)
     printf("");//close(cmd_line); // doesntwork yet :C
   else{
-    if(DEBUG)
+    if (DEBUG)
       printf("%s ERROR!!!!!",cmd_line);
     return SYSCALL_ERROR;
   }
@@ -319,7 +319,7 @@ pid_t exec (const char *cmd_line)
 
   pid_t pid = process_execute (cmd_line);
 
-  if(DEBUG)
+  if (DEBUG)
     printf("EXEC: sema'ing down on: %s\n",thread_current()->name);
   struct thread_child* child_thread_ptr = get_child_by_tid (pid);
   child_thread_ptr->parent_waiting = 1;
@@ -331,9 +331,9 @@ pid_t exec (const char *cmd_line)
   }
   
 
-  //if(DEBUG)
+  //if (DEBUG)
     //printf("EXEC: %s exit status: %d \n", child_thread_ptr->child_pointer->parent->name, child_thread_ptr->exit_status);
-  if(child_thread_ptr->exit_status == SYSCALL_ERROR)
+  if (child_thread_ptr->exit_status == SYSCALL_ERROR)
     return SYSCALL_ERROR;
   //wait(pid);
   return pid;
@@ -351,13 +351,13 @@ int wait (pid_t pid)
   // -- pid not child:
   // struct thread* child_ptr = get_child_by_tid(pid);
 
-  // if(child_ptr == NULL){
-  //   if(DEBUG)
+  // if (child_ptr == NULL){
+  //   if (DEBUG)
   //     printf("child pointer is bad\n");
   //   return SYSCALL_ERROR;    
   // }
 
-  // if(DEBUG)
+  // if (DEBUG)
   //   printf("thread %p: %s gotten\n", child_ptr, child_ptr->name);
 
   // struct thread_child* thread_cp = get_child_struct_by_child(child_ptr);
@@ -365,8 +365,8 @@ int wait (pid_t pid)
    /* 
   // is already waiting
   printf("OHNOES!!!!!!!!!    %p\n", thread_cp);
-  if(thread_cp->parent_waiting != 0){
-    if(DEBUG)
+  if (thread_cp->parent_waiting != 0){
+    if (DEBUG)
       printf("already waiting\n");
     return SYSCALL_ERROR;
   }*/

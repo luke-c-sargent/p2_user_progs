@@ -4,7 +4,7 @@
 #include "threads/vaddr.h"
 #include "threads/thread.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 static int max_frame;
 static uint32_t bump_ptr;
@@ -14,8 +14,8 @@ static uint32_t bump_ptr;
 struct FrameTableEntry* alloc_frame_table(void){
 	int count = 1;
 	
-	void* last_ptr = (void*) palloc_get_page(PAL_USER);;
-	void* page_ptr = (void*) palloc_get_page(PAL_USER);;
+	void* last_ptr = (void*) palloc_get_page(PAL_USER);
+	void* page_ptr = (void*) palloc_get_page(PAL_USER);
 	void* first_ptr = last_ptr;
 	while(page_ptr){
 		ASSERT((page_ptr - last_ptr) == PGSIZE);
@@ -25,7 +25,7 @@ struct FrameTableEntry* alloc_frame_table(void){
 	}
 	max_frame = count;
 
-	struct FrameTableEntry* ft_ptr = (struct FrameTableEntry*)malloc(count*sizeof(struct FrameTableEntry));
+	struct FrameTableEntry* ft_ptr = (struct FrameTableEntry*)malloc (count * sizeof (struct FrameTableEntry));
 
 	int i = 0;
 
@@ -47,9 +47,9 @@ uint8_t* get_user_page(void * vaddr){	//Ali: UPDATE PTE
 	while (frame_table[bump_ptr].status == FT_FULL){
 		++bump_ptr;
 		++total;
-		if(bump_ptr == max_frame)
+		if (bump_ptr == max_frame)
 			bump_ptr = 0;
-		if(total == max_frame){
+		if (total == max_frame){
 			break;
 			// evict instead of break, get bump_ptr to evicted mem, update status
 		}
@@ -62,7 +62,7 @@ uint8_t* get_user_page(void * vaddr){	//Ali: UPDATE PTE
 uint8_t* evict_page(void){
 	
 	struct thread* t = thread_current();
-	if(DEBUG)
+	if (DEBUG)
 		printf("thread_current() name: %s\n", t->name);
 
 	while(pagedir_is_accessed (t->pagedir, frame_table[bump_ptr].vaddr)) {
@@ -75,7 +75,7 @@ uint8_t* evict_page(void){
 	while(frame_table[bump_ptr].pte != NULL && (*frame_table[bump_ptr].pte & PTE_A) != 0) {
 		*frame_table[bump_ptr].pte |= PTE_A;
 		++bump_ptr;
-		if(bump_ptr == max_frame)
+		if (bump_ptr == max_frame)
 			bump_ptr = 0;
 	}
 	*/

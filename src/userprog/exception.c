@@ -13,7 +13,7 @@
 #include "filesys/file.h"
 
 #define SYSCALL_ERROR -1
-#define DEBUG 1
+#define DEBUG 0
 //--------------------
 
 /* Number of page faults processed. */
@@ -155,7 +155,7 @@ page_fault (struct intr_frame *f)
   //=========================================
   if (fault_addr == NULL)
   {
-    if(DEBUG)
+    if (DEBUG)
       printf("PAGE FAULT: fault address was NULL\n");
     exit(SYSCALL_ERROR);
   }
@@ -170,7 +170,7 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
   struct thread* t = thread_current();
-  if(DEBUG) {
+  if (DEBUG) {
     printf("thread esp: %p\nstack_pointer:%p \nf->esp:%p\n", t->esp, t->stack_pointer, f->esp);
     printf("PAGE FAULT: fault addr: %p\n", fault_addr);
   }
@@ -181,17 +181,17 @@ page_fault (struct intr_frame *f)
 
   //void* paddr = pagedir_get_page (&t->pagedir, fault_addr);  //Ali: &fault_addr?
 
-  //if(DEBUG && paddr == NULL)
+  //if (DEBUG && paddr == NULL)
     //printf("Page Fault: VA is not mapped\n");
   
 
   
 
-  if(spte){
-    if(DEBUG && is_user_vaddr(fault_addr)){
+  if (spte){
+    if (DEBUG && is_user_vaddr(fault_addr)){
       printf("~~SPT: sp:%d\tvaddr:%p\tpg#:%d\trb:%d\n\tofs:%d\trbyte:%d\tzbyte:%d\twrt:%d\n", spte->is_stack_page, spte->vaddr, spte->page_number, spte->resident_bit, spte->ofs, spte->page_read_bytes, spte->page_zero_bytes, spte->writable);
     }
-    if(DEBUG){
+    if (DEBUG){
       printf("\tthread %s fault address %p rounded to %p \n\n", thread_current()->name, fault_addr, page_start);
     }
 
@@ -207,7 +207,7 @@ page_fault (struct intr_frame *f)
     /* Load this page. */
     if (file_read (t->executable, kpage, spte->page_read_bytes) != (int) spte->page_read_bytes)
         {
-          if(DEBUG)
+          if (DEBUG)
             printf("\tfile read FAILURE :C :C :C :C\n");
           //palloc_free_page (kpage);
           //return false; 
@@ -217,7 +217,7 @@ page_fault (struct intr_frame *f)
     /* Add the page to the process's address space. */
     if (!install_page (page_start, kpage, spte->writable)) 
      {
-      if(DEBUG){
+      if (DEBUG){
         printf("kpage %p\n", kpage);
         //palloc_free_page (kpage); // dis aint good
         printf("ERROR IN INSTALL PAGE\n");}
@@ -226,22 +226,22 @@ page_fault (struct intr_frame *f)
      }
     spte->resident_bit = true;
   } else { // NULL
-    if(DEBUG)
+    if (DEBUG)
       printf("PAGE FAULT: could not find SPT entry\n");
       // stack growth logic --------------------------------------------
     //void * limit = PHYS_BASE - PGSIZE - 0x20;
-    if(DEBUG) {
+    if (DEBUG) {
       printf("subtracting f->esp %p and fault_addr %p = %p \n", f->esp, fault_addr, (void*)((uint32_t)f->esp - (uint32_t)fault_addr));
       printf("subtracting t->esp %p and fault_addr %p = %p \n", t->esp, fault_addr, t->esp - fault_addr);
     }
-    if(abs((uint32_t) f->esp - (uint32_t) fault_addr)<= 32 || t->esp > f->esp || (!t->esp && fault_addr > f->esp) || (t->esp && t->esp < fault_addr)){
-      if(DEBUG)
+    if (abs((uint32_t) f->esp - (uint32_t) fault_addr)<= 32 || t->esp > f->esp || (!t->esp && fault_addr > f->esp) || (t->esp && t->esp < fault_addr)){
+      if (DEBUG)
         printf("trying to grow stack\n");
       // get a page, add a SPT entry, install page
 
       //added-------------------------kernel to kernel
-      if(t->esp > f->esp){
-        if(DEBUG)
+      if (t->esp > f->esp){
+        if (DEBUG)
           printf("Changed page_start to t->esp\n");
         page_start = pg_round_down(t->esp);
       }// end added 
@@ -249,7 +249,7 @@ page_fault (struct intr_frame *f)
       uint8_t *kpage = get_user_page(page_start);
 
       if (!install_page (page_start, kpage, spte->writable)){
-        if(DEBUG)
+        if (DEBUG)
           printf("install page is borked\n");
         exit(SYSCALL_ERROR);
       }
@@ -259,7 +259,7 @@ page_fault (struct intr_frame *f)
 
 
   // --------------------------------------------------
-  if(DEBUG)
+  if (DEBUG)
     printf("\tPage_start: %p\n", page_start);
 
   // printf ("Page fault at %p: %s error %s page in %s context.\n\n",
