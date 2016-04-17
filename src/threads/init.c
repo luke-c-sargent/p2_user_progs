@@ -38,6 +38,7 @@
 #include "filesys/fsutil.h"
 //----------------------------------------------------
 #include "vm/frame.h"
+#include "vm/swap.h"
 //----------------------------------------------------
 #endif
 
@@ -132,6 +133,10 @@ main (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
+
+  // INITIALIZE SWAP TABLE ------------------------------
+  init_swap_table();
+  // ----------------------------------------------------
 
   printf ("Boot complete.\n");
   
