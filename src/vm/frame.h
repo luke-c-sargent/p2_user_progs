@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "threads/synch.h"
 
-// frame table
 enum FT_STATUS 				/* Possible status of the frame table */
 {
 	FT_EMPTY = 0,
@@ -18,9 +17,7 @@ struct FrameTableEntry 		/* Entry of a single frame */
 	void * vaddr;
 };
 
-
 struct FrameTableEntry* frame_table;
-
 struct semaphore paging_sema;
 
 // function declarations

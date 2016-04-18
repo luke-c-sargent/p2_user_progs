@@ -1,7 +1,6 @@
 #ifndef VM_PAGE_H
 #define VM_PAGE_H
 
-//Supplemental Page Table
 #include "lib/kernel/bitmap.h"
 #include "lib/kernel/hash.h"
 #include "threads/synch.h"
@@ -9,15 +8,15 @@
 #include "threads/vaddr.h"
 #include "filesys/off_t.h"
 
+
 static const uint32_t max_page = ((uint32_t) PHYS_BASE / ((uint32_t) PGSIZE));
 
-// SPT wrapper
 struct SPT{
 	struct hash hash_table;
 };
-// ------------------------------
+
 #include "threads/thread.h"
-// ------------------------------
+
 struct SPT_entry {
 	bool is_stack_page;
 	void * vaddr;
@@ -37,16 +36,10 @@ struct SPT_entry* create_SPT_entry (void* vaddr, bool resident_bit,
 		off_t ofs, size_t page_read_bytes, size_t page_zero_bytes, bool writable);
 void remove_SPT_entry (struct SPT_entry* spte);
 void init_SPT (struct thread* t);
-
-// hash func
 unsigned int hasher (const struct hash_elem *p_, void *aux UNUSED);
-
-// less func
 bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,
            void *aux UNUSED);
-
 struct SPT_entry* get_SPT_entry (void* vaddr);
 uint32_t vaddr_to_page_num (void* addr);
 void* page_num_to_vaddr (uint32_t page_number);
-
 #endif /* vm/page.h */

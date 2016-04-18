@@ -122,12 +122,12 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
   if (DEBUG)
-    printf("initializing hash...");
+    printf ("initializing hash...");
 
-  hash_init(&(thread_current()->SP_table.hash_table), hasher, page_less, NULL);
+  hash_init (&(thread_current ()->SP_table.hash_table), hasher, page_less, NULL);
   
   if (DEBUG)
-    printf("... hash initialized\n");
+    printf ("... hash initialized\n");
   
   success = load (file_name, &if_.eip, &if_.esp);
 
@@ -136,14 +136,14 @@ start_process (void *file_name_)
   struct thread_child* child_struct_ptr  = list_entry (thread_current()->child_list_elem, struct thread_child, elem);
 
   if (DEBUG)
-    printf("START PROCESS success status %d\n", success);
+    printf ("START PROCESS success status %d\n", success);
 
   if (!success)
     child_struct_ptr->exit_status = SYSCALL_ERROR;
   
   if (child_struct_ptr->parent_waiting){
     if (DEBUG)
-      printf("child thread sema'ing up on: %s\n",child_struct_ptr->child_pointer->parent->name);
+      printf ("child thread sema'ing up on: %s\n",child_struct_ptr->child_pointer->parent->name);
     //child_struct_ptr->parent_waiting = 0;
     //sema_up(&child_struct_ptr->child_pointer->parent->sema);
     
@@ -155,18 +155,18 @@ start_process (void *file_name_)
 
     if (DEBUG)
     {
-      printf("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
+      printf ("...%p : %s not successful, exit status %d\n",child_struct_ptr, child_struct_ptr->child_pointer->name, SYSCALL_ERROR);
 
     }
     thread_exit ();
   }
   if (DEBUG)
   {
-    printf("...  successfully loaded\n");
+    printf ("...  successfully loaded\n");
   }
 
   if (DEBUG)
-    printf("\n\n%s hash initialized\n\n", thread_current()->name);
+    printf ("\n\n%s hash initialized\n\n", thread_current()->name);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -219,10 +219,6 @@ process_wait (tid_t child_tid)
   exit_status = child_struct_ptr->exit_status;
   // remove child from child list
   list_remove(&child_struct_ptr->elem);
-
-
-  //if (DEBUG)
-    //printf("exit status of %p: %s is now %d \n", child_struct_ptr->child_pointer, child_struct_ptr->child_pointer->name, child_struct_ptr->exit_status);
 
   return exit_status;
   // --------------------------------------------------------

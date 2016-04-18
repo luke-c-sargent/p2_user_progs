@@ -5,10 +5,15 @@
 #include <inttypes.h>
 
 #define ERROR_CODE -1
-#define DEBUG 1
+#define DEBUG 0
 
 void add_swap_entry_helper(int offset, void* vaddr);
 
+/* 	Function: init_swap_table
+	Description: initializes the swap table
+	Parameters: none
+	Returns: void
+*/
 void init_swap_table(void)
 {
 	if(DEBUG)
@@ -16,7 +21,7 @@ void init_swap_table(void)
 	swap_block = block_get_role(BLOCK_SWAP);
 
 	uint32_t sector_count = block_size (swap_block);
-	entries = ((uint32_t)sector_count)/ ((uint32_t)SECTORS_PER_PAGE);
+	entries = ((uint32_t)sector_count)/((uint32_t)SECTORS_PER_PAGE);
 
 	if(!swap_block)
 		exit(ERROR_CODE);
@@ -27,6 +32,11 @@ void init_swap_table(void)
 	swap_table = calloc(sizeof(struct Swap_entry)*entries, 1);
 }
 
+/* 	Function: add_swap_entry
+	Description: adds entry to swap table
+	Parameters: virtual address void pointer
+	Returns: int, either entry index, or -1 denoting error.
+*/
 int add_swap_entry(void* vaddr)
 {
 	if(DEBUG)
@@ -45,20 +55,30 @@ int add_swap_entry(void* vaddr)
 			return i;
 		}
 	}
-	return -1;
+	return ERROR_CODE;
 }
 
+/* 	Function: add_swap_entry_helper
+	Description: helper function for adding an entry to swap table
+	Parameters: int offset of sector in swap partition, virtual address void pointer
+	Returns: void
+*/
 void add_swap_entry_helper(int offset, void* vaddr)
 {
 	uint32_t i;
-	for(i = 0; i < SECTORS_PER_PAGE; ++i) {
+	for(i = 0; i < SECTORS_PER_PAGE; ++i) 
+	{
 		if(DEBUG){printf("off: %d sects: %d i: %d result: %d\n", offset, SECTORS_PER_PAGE, i, offset * SECTORS_PER_PAGE + i);}
 		block_write (swap_block, offset * SECTORS_PER_PAGE + i, vaddr);
 		vaddr += BLOCK_SECTOR_SIZE;
 	}
 }
 
-//read and remove
+/* 	Function: remove_swap_entry
+	Description: reads and removes entry in swap table
+	Parameters: int index into sector, physical address void pointer, SPT entry struct pointer
+	Returns: void
+*/
 void remove_swap_entry(int index, void* paddr, struct SPT_entry* spte)
 {
 	if(DEBUG)

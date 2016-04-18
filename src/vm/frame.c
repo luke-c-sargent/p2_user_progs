@@ -13,8 +13,13 @@
 static int max_frame; 		/* Max number of frames in Physical Memory */
 static uint32_t bump_ptr;	/* Keeps track of the clock hand */
 
-uint8_t * evict_page(void);
+uint8_t* evict_page(void);
 
+/* 	Function: alloc_frame_table
+	Description: allocate memory for frame table
+	Parameters: none
+	Returns: pointer to frame table struct
+*/
 struct FrameTableEntry* alloc_frame_table(void)
 {
 	int count = 1;
@@ -44,12 +49,22 @@ struct FrameTableEntry* alloc_frame_table(void)
 	return ft_ptr;
 }
 
+/* 	Function: init_frame_table
+	Description: initialize frame table
+	Parameters: none
+	Returns: void
+*/
 void init_frame_table(void)
 {
 	sema_init (&paging_sema, 0);
 	frame_table = alloc_frame_table ();
 }
 
+/* 	Function: get_user_page
+	Description: gets the user page using virtual address
+	Parameters: virtual address void pointer
+	Returns: pointer to user page in frame table
+*/
 uint8_t* get_user_page(void * vaddr)
 {
 	int total = 0;
@@ -61,10 +76,11 @@ uint8_t* get_user_page(void * vaddr)
 			bump_ptr = 0;
 		if (total == max_frame)
 		{
-			if(DEBUG){
-				printf("bumpy bumperson: %d \n", bump_ptr);
+			if(DEBUG)
+			{
+				printf ("bumpy bumperson: %d \n", bump_ptr);
 			}
-			return evict_page();
+			return evict_page ();
 		}
 	}
 	frame_table[bump_ptr].status = FT_FULL;
@@ -72,72 +88,83 @@ uint8_t* get_user_page(void * vaddr)
 	return frame_table[bump_ptr].frame_ptr;
 }
 
+/* 	Function: evict_page
+	Description: evicts page of current thread using accessed bit
+	Parameters: none
+	Returns: pointer to frame using bump_ptr as index
+*/
 uint8_t* evict_page(void)
 {
 	struct thread* t = thread_current ();
 	if (DEBUG)
-		printf ("thread_current() name: %s\n", t->name);
+		printf ("thread_current () name: %s\n", t->name);
 
-
-	//Finding page to evict using accessed bit
 	while (pagedir_is_accessed (t->pagedir, frame_table[bump_ptr].vaddr))
 	{
 		pagedir_set_accessed (t->pagedir, frame_table[bump_ptr].vaddr, false);
 		++bump_ptr;
-		if(bump_ptr == max_frame){
+		if(bump_ptr == max_frame)
+		{
 			bump_ptr = 0;
 		}
 	}
-
 	//Emptying frame table entry
 	frame_table[bump_ptr].status = FT_EMPTY;
 
-	if(DEBUG){
+	if(DEBUG)
+	{
 		printf("ft: %p  bump_ptr: %d  vaddr: %p\n", frame_table, bump_ptr, frame_table[bump_ptr].vaddr);
 	}
-
-	//Updating SPT_entry info
-	struct SPT_entry *spte = get_SPT_entry(frame_table[bump_ptr].vaddr);
-	// dies above ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	struct SPT_entry *spte = get_SPT_entry (frame_table[bump_ptr].vaddr);
 	spte->resident_bit = false;
-	//Swapping all stack/dirty pages to disk
 
-	if(DEBUG){
-		
-		//printf("pagedir: %p ", t->pagedir);
-		printf("vaddr: %p ", frame_table[bump_ptr].vaddr);
-		printf("stacky: %p \n", spte->is_stack_page);
+	if(DEBUG)
+	{
+		printf ("vaddr: %p ", frame_table[bump_ptr].vaddr);
+		printf ("stacky: %p \n", spte->is_stack_page);
 	}
 	if (pagedir_is_dirty (t->pagedir, frame_table[bump_ptr].vaddr) || spte->is_stack_page)
 	{
-		if (DEBUG) {
+		if (DEBUG) 
+		{
 			if (spte->is_stack_page)
-				printf("Moving stack page to swap space\n");
+				printf ("Moving stack page to swap space\n");
 		 	else
-		 		printf("Moving dirty page to swap space\n");
+		 		printf ("Moving dirty page to swap space\n");
 		 }
 
 		if(pagedir_is_dirty (t->pagedir, frame_table[bump_ptr].vaddr))
 			spte->dirty_bit = true;
 
-		spte->swap_index = add_swap_entry(frame_table[bump_ptr].vaddr);
-		if (spte->swap_index == -1) {
+		spte->swap_index = add_swap_entry (frame_table[bump_ptr].vaddr);
+		if (spte->swap_index == -1) 
+		{
 			if (DEBUG)
-				printf("ERROR adding swap entry\n");
-			exit(ERROR_CODE);
+				printf ("ERROR adding swap entry\n");
+			exit (ERROR_CODE);
 		}
 	}
-
 	//Updating page directory entry
 	pagedir_clear_page (t->pagedir, frame_table[bump_ptr].vaddr);
 
 	return frame_table[bump_ptr].frame_ptr;
 }
 
+/* 	Function: frameptr_to_frame_num
+	Description: translates frame pointer to frame number through truncation
+	Parameters: physical address that represents a frame
+	Returns: pointer to frame using bump_ptr as index
+*/
 uint32_t frameptr_to_frame_num(void* addr)
 {
 	return ((int)addr-(int)frame_table[0].frame_ptr)/PGSIZE;
 }
+
+/* 	Function: frame_num_to_frameptr
+	Description: translates frame number to frame pointer
+	Parameters: frame number
+	Returns: void pointer to frame address
+*/
 void* frame_num_to_frameptr (uint32_t frame_num){
 	ASSERT (frame_num <= max_frame);
 	return (void*)(PGSIZE*frame_num + (uint32_t)frame_table[0].frame_ptr);
