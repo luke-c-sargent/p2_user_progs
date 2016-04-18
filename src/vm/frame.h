@@ -6,19 +6,19 @@
 
 enum FT_STATUS 				/* Possible status of the frame table */
 {
-	FT_EMPTY = 0,
-	FT_FULL
+	FT_EMPTY = 0,			/* frame is empty and can be allocated */
+	FT_FULL					/* frame is full and could be evicted */
 };
 
 struct FrameTableEntry 		/* Entry of a single frame */
 {
-	void * frame_ptr;		
-	int status;
-	void * vaddr;
+	void * frame_ptr;		/* pointer to physical memory where frame resides */
+	int status;				/* status of this frame */
+	void * vaddr;			/* virtual address this frame correlates to */
 };
 
-struct FrameTableEntry* frame_table;
-struct semaphore paging_sema;
+struct FrameTableEntry* frame_table; /* pointer to first frame table entry for indexing */
+struct semaphore paging_sema;	/* semaphore for atomic access */
 
 // function declarations
 struct FrameTableEntry* alloc_frame_table (void);

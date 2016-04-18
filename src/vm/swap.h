@@ -13,10 +13,10 @@ struct Swap_entry
 	void* vaddr; 	/* owning page's virtual address */
 };
 
-struct Swap_entry* swap_table;
+struct Swap_entry* swap_table; /* pointer to first element of swap table for random access */
 
-static struct block* swap_block;
-static uint32_t entries;
+static struct block* swap_block; 	/* swap block pointer for meta-data access */
+static uint32_t entries; 			/* number of entries in swap table to avoid out-of-bounds access */
 
 void init_swap_table(void);
 int add_swap_entry(void* vaddr);
