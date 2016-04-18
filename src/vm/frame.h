@@ -5,19 +5,19 @@
 #include "threads/synch.h"
 
 // frame table
-enum FT_STATUS 
+enum FT_STATUS 				/* Possible status of the frame table */
 {
 	FT_EMPTY = 0,
 	FT_FULL
 };
 
-struct FrameTableEntry 
+struct FrameTableEntry 		/* Entry of a single frame */
 {
-	void * frame_ptr;
-	// uint32_t* pte;
+	void * frame_ptr;		
 	int status;
 	void * vaddr;
 };
+
 
 struct FrameTableEntry* frame_table;
 

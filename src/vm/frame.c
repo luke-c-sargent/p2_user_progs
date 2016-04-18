@@ -10,8 +10,8 @@
 #define DEBUG 0
 #define ERROR_CODE -1
 
-static int max_frame;
-static uint32_t bump_ptr;
+static int max_frame; 		/* Max number of frames in Physical Memory */
+static uint32_t bump_ptr;	/* Keeps track of the clock hand */
 
 uint8_t * evict_page(void);
 
